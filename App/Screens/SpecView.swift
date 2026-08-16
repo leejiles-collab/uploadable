@@ -192,16 +192,6 @@ struct SpecRow: View {
     var subtitleOverride: String?
     let action: () -> Void
 
-    private static let formatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "d MMM yyyy"
-        // The catalog builds these dates in UTC. Rendering them in local time
-        // turned "verified 15 Aug" into "verified 14 Aug" on a Pacific
-        // simulator — a provenance date that is wrong is worse than none.
-        f.timeZone = TimeZone(identifier: "UTC")
-        return f
-    }()
-
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
@@ -218,8 +208,8 @@ struct SpecRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
-                    if let verified = spec.source.verifiedOn {
-                        Text("Requirements verified \(Self.formatter.string(from: verified))")
+                    if let label = ProvenanceFormat.label(for: spec.source) {
+                        Text(label)
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }

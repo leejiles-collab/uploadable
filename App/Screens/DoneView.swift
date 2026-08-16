@@ -13,16 +13,6 @@ struct DoneView: View {
     @State private var isExporting = false
     @State private var saveMessage: String?
 
-    private static let formatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "d MMM yyyy"
-        // The catalog builds these dates in UTC. Rendering them in local time
-        // turned "verified 15 Aug" into "verified 14 Aug" on a Pacific
-        // simulator — a provenance date that is wrong is worse than none.
-        f.timeZone = TimeZone(identifier: "UTC")
-        return f
-    }()
-
     var body: some View {
         ScrollView {
             VStack(spacing: Metrics.stackSpacing) {
@@ -105,9 +95,9 @@ struct DoneView: View {
             if fit.spec.exif == .stripAll {
                 TickRow(value: "Location data removed", requirement: nil)
             }
-            if let verified = fit.spec.source.verifiedOn {
+            if let label = ProvenanceFormat.label(for: fit.spec.source) {
                 TickRow(
-                    value: "Requirements verified \(Self.formatter.string(from: verified))",
+                    value: label,
                     requirement: nil,
                     muted: true
                 )

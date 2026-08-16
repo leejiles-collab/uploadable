@@ -26,7 +26,13 @@ struct HomeView: View {
 
             Spacer()
 
-            PhotosPicker(selection: $selection, matching: .images, photoLibrary: .shared()) {
+            // No `photoLibrary:` argument on purpose. That variant binds the
+            // picker to the app's own library access, which exists so you can
+            // receive asset identifiers — we load `Data` and never touch an
+            // identifier, so it buys nothing and costs a read-authorisation
+            // prompt the app has no reason to ask for. Without it the picker
+            // runs out of process and needs no permission at all.
+            PhotosPicker(selection: $selection, matching: .images) {
                 Group {
                     if isLoading {
                         ProgressView()

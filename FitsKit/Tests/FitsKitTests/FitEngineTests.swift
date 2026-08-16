@@ -41,6 +41,45 @@ struct FitEngineTests {
         return context.makeImage()!
     }
 
+    /// Something that compresses like a photograph: broad smooth areas, soft
+    /// tonal transitions, moderate fine detail.
+    ///
+    /// `noisyImage` is deliberately incompressible, which is right for
+    /// exercising byte bands but wrong for any claim about quality. White noise
+    /// against DS-160's 240 KB cap genuinely cannot reach q0.70 even at the
+    /// spec's minimum size — that is a property of the image, not a defect, and
+    /// asserting quality against it would be measuring the fixture.
+    static func photographicImage(width: Int, height: Int, seed: UInt64 = 9) -> CGImage {
+        let space = CGColorSpace(name: CGColorSpace.sRGB)!
+        let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: 0, space: space,
+            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+        )!
+        let gradient = CGGradient(colorsSpace: space, colors: [
+            CGColor(red: 0.93, green: 0.92, blue: 0.94, alpha: 1),
+            CGColor(red: 0.70, green: 0.73, blue: 0.78, alpha: 1)
+        ] as CFArray, locations: [0, 1])!
+        context.drawLinearGradient(
+            gradient, start: .zero, end: CGPoint(x: 0, y: height), options: []
+        )
+        context.setFillColor(CGColor(red: 0.85, green: 0.69, blue: 0.59, alpha: 1))
+        context.fillEllipse(in: CGRect(
+            x: width / 2 - width / 5, y: height / 2 - height / 8,
+            width: width * 2 / 5, height: height / 2
+        ))
+        var state = seed
+        for _ in 0..<(width * height / 9000) {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            let x = Int((state >> 33) % UInt64(width))
+            let y = Int((state >> 13) % UInt64(height))
+            let v = Double((state >> 50) % 100) / 100
+            context.setFillColor(CGColor(red: v, green: v * 0.92, blue: v * 0.86, alpha: 0.18))
+            context.fill(CGRect(x: x, y: y, width: 6, height: 6))
+        }
+        return context.makeImage()!
+    }
+
     static func writeJPEG(_ image: CGImage, quality: Double = 0.95) throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("fits-test-\(UUID().uuidString).jpg")
@@ -115,7 +154,7 @@ struct FitEngineTests {
         #expect(SpecCatalog.usVisa.bytes.contains(fit.byteCount))
         #expect(fit.verification.passed)
         #expect(fit.encodeCount <= Config.maxEncodes)
-        #expect(fit.quality >= Config.qualityFloor)
+        #expect(fit.quality >= Config.shipQualityFloor)
         await engine.discardOutputs()
     }
 

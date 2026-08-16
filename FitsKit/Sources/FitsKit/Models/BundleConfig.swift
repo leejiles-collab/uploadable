@@ -24,13 +24,31 @@ public enum Config {
     /// pathological image cannot spin.
     public static let maxEncodes = 32
 
-    /// Quality range the solver will search. Below the floor a photo of a face
-    /// starts showing blocking, and shipping that to a government portal is how
-    /// people get rejected for "poor quality".
-    public static let qualityFloor = 0.5
+    /// How low the quality bisection may probe.
+    ///
+    /// Separate from `shipQualityFloor` on purpose. One number meaning both
+    /// "how far the search may look" and "what we are willing to ship" cannot
+    /// be reasoned about: raising one to protect the user silently narrows the
+    /// search, and widening the search silently lowers what ships. They are
+    /// equal today and that is a coincidence, not a definition.
+    public static let searchQualityFloor = 0.5
+
+    /// The lowest quality that may ever leave the app.
+    ///
+    /// Reached only when the smallest legal dimensions still cannot meet the
+    /// byte limit at anything better. A result down here keeps the softness
+    /// warning, because "blurry" and "pixelated" are named rejection reasons on
+    /// the State Department's own page.
+    public static let shipQualityFloor = 0.5
+
     public static let qualityCeiling = 1.0
 
-    /// A landing at or above this quality is good enough to stop looking.
+    /// What we will not go below while there is still a smaller size to try.
+    ///
+    /// Against a fixed byte ceiling, resolution is bought with compression —
+    /// they are not independent. A face at q0.50 with visible blocking is a
+    /// worse submission than a smaller one at q0.70, so dimensions give way
+    /// first and quality only falls when nothing else can.
     public static let acceptableQuality = 0.7
 
     /// Aim this far into the byte band, as a fraction of its width, and keep

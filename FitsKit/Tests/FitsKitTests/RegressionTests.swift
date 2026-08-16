@@ -107,17 +107,84 @@ struct RegressionTests {
     /// limit rather than a range.
     @Test func aCeilingOnlySpecFillsItsAllowance() async throws {
         let url = try FitEngineTests.writeJPEG(
-            FitEngineTests.noisyImage(width: 4284, height: 5712), quality: 0.95
+            FitEngineTests.photographicImage(width: 4284, height: 5712), quality: 0.95
         )
         defer { try? FileManager.default.removeItem(at: url) }
 
         let engine = try FitEngine()
         let fit = try await engine.fit(url: url, to: SpecCatalog.usVisa)
 
+        // One of the two limits has to be doing the binding. Either the pixel
+        // maximum is reached, or the byte budget is mostly spent — if neither
+        // is true, the result was smaller than it needed to be, which is the
+        // bug. Asserting bytes alone is wrong: a very compressible photograph
+        // legitimately lands at 1200 × 1200 for 85 KB, having used every pixel
+        // the spec allows.
+        let maximumPixels = fit.pixelWidth >= 1200
+        let mostOfTheBudget = fit.byteCount > 180_000
+        #expect(maximumPixels || mostOfTheBudget,
+                "landed at \(fit.pixelWidth)px / \(fit.byteCount) bytes — neither limit was binding")
         #expect(fit.pixelWidth > 900, "shrank to \(fit.pixelWidth) px when 1200 was allowed")
-        #expect(fit.byteCount > 180_000, "used \(fit.byteCount) bytes of a 240 KB allowance")
+        #expect(fit.quality >= Config.acceptableQuality,
+                "filled the allowance by going soft, at q\(fit.quality)")
         #expect(SpecCatalog.usVisa.bytes.contains(fit.byteCount))
         #expect(fit.verification.passed)
+        await engine.discardOutputs()
+    }
+
+    /// Filling the allowance must not be paid for in blocking artefacts. Against
+    /// a fixed byte ceiling, resolution and quality trade against each other, so
+    /// a face at q0.50 is a worse submission than a smaller one at q0.70 —
+    /// "blurry or pixelated" is a named rejection reason on State's own page.
+    ///
+    /// A 2400 × 2400 source has room to step down for every offered spec, so
+    /// none of them has any excuse for going soft.
+    @Test func noOfferedSpecShipsBelowAcceptableQualityFromALargeSource() async throws {
+        let url = try FitEngineTests.writeJPEG(
+            FitEngineTests.photographicImage(width: 2400, height: 2400), quality: 0.95
+        )
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let engine = try FitEngine()
+        for spec in SpecCatalog.all {
+            guard let fit = try? await engine.fit(url: url, to: spec) else {
+                Issue.record("\(spec.id) refused a 2400 × 2400 source outright")
+                continue
+            }
+            #expect(fit.quality >= Config.acceptableQuality,
+                    "\(spec.id) shipped q\(fit.quality) at \(fit.pixelWidth)px with room to step down")
+            #expect(fit.quality >= Config.shipQualityFloor)
+        }
+        await engine.discardOutputs()
+    }
+
+    /// Whatever route a result took — including the last-resort path that takes
+    /// the quality extreme when the search misses the band — it must be inside
+    /// the spec's own limits, not merely inside our safety clearance.
+    ///
+    /// The clearance is ours: it exists because portals disagree about whether
+    /// "240 KB" means 240,000 bytes or 245,760. Landing outside it is allowed.
+    /// Landing outside the spec is not, ever.
+    @Test func everyAcceptedResultIsInsideTheSpecNotJustTheClearance() async throws {
+        let engine = try FitEngine()
+        // A range of sizes, so some fits take the ordinary path and some are
+        // pushed onto the extremes.
+        for size in [(4284, 5712), (2400, 2400), (1300, 1300)] {
+            let url = try FitEngineTests.writeJPEG(
+                FitEngineTests.noisyImage(width: size.0, height: size.1), quality: 0.95
+            )
+            defer { try? FileManager.default.removeItem(at: url) }
+
+            for spec in SpecCatalog.all {
+                guard let fit = try? await engine.fit(url: url, to: spec) else { continue }
+                #expect(spec.bytes.contains(fit.byteCount),
+                        "\(spec.id) at \(size.0)x\(size.1) produced \(fit.byteCount) bytes, outside \(spec.bytes)")
+                #expect(fit.quality >= Config.shipQualityFloor,
+                        "\(spec.id) shipped below the ship floor")
+                // And the file on disk agrees, which is the check that counts.
+                #expect(fit.verification.passed)
+            }
+        }
         await engine.discardOutputs()
     }
 

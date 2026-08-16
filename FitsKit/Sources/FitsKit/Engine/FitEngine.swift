@@ -123,7 +123,7 @@ public actor FitEngine {
 
             switch probe.outcome {
             case .landed(let quality, let bytes, let file):
-                if aim.isCeilingOnly || quality >= Config.acceptableQuality {
+                if quality >= Config.acceptableQuality {
                     best = (size, quality, bytes, file)
                 } else if compromise == nil || quality > compromise!.quality {
                     // Fewer pixels for the same byte budget buys quality, which
@@ -155,6 +155,12 @@ public actor FitEngine {
 
         let hitCap = encodes >= Config.maxEncodes && best == nil && compromise == nil
         if best == nil { best = compromise }
+
+        // The invariant, stated where it can be seen: nothing below the ship
+        // floor leaves here, however it was arrived at.
+        if let candidate = best, candidate.quality < Config.shipQualityFloor {
+            best = nil
+        }
 
         // 3. Nothing landed. Say which wall we hit and what would move it.
         guard let winner = best else {
@@ -307,7 +313,7 @@ public actor FitEngine {
         // and most sizes never go near either end. Start where a photograph
         // usually wants to be and bisect from there; the extremes get measured
         // only if the search actually arrives at one.
-        var lowQuality = Config.qualityFloor
+        var lowQuality = Config.searchQualityFloor
         var highQuality = Config.qualityCeiling
         var landed: (Double, Int, URL)?
         var quality = Config.startingQuality
@@ -363,7 +369,7 @@ public actor FitEngine {
         // Measure the relevant extreme once, so the number shown to the user is
         // one actually taken, and skip it when there is no budget left.
         if encodes < Config.maxEncodes {
-            let edgeQuality = overCeiling ? Config.qualityFloor : Config.qualityCeiling
+            let edgeQuality = overCeiling ? Config.searchQualityFloor : Config.qualityCeiling
             let name = overCeiling ? "edge-low" : "edge-high"
             let url = workspace.url(named: "\(name)-\(size.width)x\(size.height).jpg")
             let bytes = try JPEGEncoder.encode(

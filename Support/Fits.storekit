@@ -1,0 +1,24 @@
+{
+  "identifier" : "FITS-LOCAL-STOREKIT",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "FITSPRO0001",
+      "localizations" : [
+        {
+          "description" : "Unlimited exports, for ever. One payment.",
+          "displayName" : "Fits Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.leejiles.fits.pro",
+      "referenceName" : "Fits Pro",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {},
+  "subscriptionGroups" : [],
+  "version" : { "major" : 3, "minor" : 0 }
+}

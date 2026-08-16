@@ -60,6 +60,22 @@ public enum ImageNormaliser {
         return try uprightSRGB(decoded, orientation: facts.orientation)
     }
 
+    /// A small upright copy, for showing the photo before anything is decided.
+    ///
+    /// Goes through ImageIO's thumbnail path rather than decoding the whole
+    /// image: a 4284 × 5712 source is 24 megapixels, and the crop screen needs
+    /// a few hundred thousand. `WithTransform` applies the orientation, so the
+    /// preview matches `SourceFacts.uprightSize` and a rect dragged on it means
+    /// the same thing to the engine.
+    public static func preview(url: URL, maxEdge: Int = 1400) -> CGImage? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxEdge
+        ] as CFDictionary)
+    }
+
     /// Draws into an sRGB context, applying the EXIF orientation as it goes.
     static func uprightSRGB(_ image: CGImage, orientation: Int) throws -> CGImage {
         let swapsAxes = (5...8).contains(orientation)
@@ -86,8 +102,10 @@ public enum ImageNormaliser {
     }
 
     /// Crops to the aspect rule and scales to an exact pixel size.
-    static func render(_ image: CGImage, aspect: AspectRule, to size: PixelSize) throws -> CGImage {
-        let cropped = crop(image, toAspect: aspect) ?? image
+    static func render(
+        _ image: CGImage, aspect: AspectRule, to size: PixelSize, crop rect: CropRect? = nil
+    ) throws -> CGImage {
+        let cropped = crop(image, toAspect: aspect, rect: rect) ?? image
         guard let context = sRGBContext(width: size.width, height: size.height) else {
             throw FitFailure.unreadableSource("Could not allocate a drawing context.")
         }
@@ -99,8 +117,18 @@ public enum ImageNormaliser {
         return out
     }
 
-    /// The largest centred rect of the required shape.
-    static func crop(_ image: CGImage, toAspect aspect: AspectRule) -> CGImage? {
+    /// The part of the image to keep: what the user placed, or the largest
+    /// centred rect of the required shape when they placed nothing.
+    static func crop(_ image: CGImage, toAspect aspect: AspectRule, rect: CropRect? = nil) -> CGImage? {
+        let size = PixelSize(width: image.width, height: image.height)
+        if let rect {
+            let pixels = rect.pixels(in: size, aspect: aspect.value)
+            // A rect covering the whole frame of a .free spec is not a crop.
+            if pixels == CGRect(x: 0, y: 0, width: size.width, height: size.height) {
+                return image
+            }
+            return image.cropping(to: pixels)
+        }
         guard let wanted = aspect.value else { return image }
         let width = Double(image.width)
         let height = Double(image.height)
@@ -122,8 +150,8 @@ public enum ImageNormaliser {
 
     /// The size of the aspect-correct crop, in source pixels. This is the real
     /// ceiling on output resolution — anything larger is upscaling.
-    static func croppedSize(of image: CGImage, aspect: AspectRule) -> PixelSize {
-        guard let cropped = crop(image, toAspect: aspect) else {
+    static func croppedSize(of image: CGImage, aspect: AspectRule, rect: CropRect? = nil) -> PixelSize {
+        guard let cropped = crop(image, toAspect: aspect, rect: rect) else {
             return PixelSize(width: image.width, height: image.height)
         }
         return PixelSize(width: cropped.width, height: cropped.height)

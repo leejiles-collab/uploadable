@@ -38,26 +38,45 @@ public actor FitEngine {
         try ImageNormaliser.facts(of: url)
     }
 
-    public func fit(url: URL, to spec: UploadSpec, outputName: String? = nil) throws -> Fit {
+    public func fit(
+        url: URL,
+        to spec: UploadSpec,
+        crop: CropRect? = nil,
+        outputName: String? = nil,
+        onStep: (@Sendable (FitStep) -> Void)? = nil
+    ) async throws -> Fit {
+        // Yields after every reported step. Two reasons, both of them things
+        // that were broken before it did: the working screen showed no steps at
+        // all, because a synchronous actor method never gives the main actor a
+        // chance to draw between them; and Cancel could not interrupt anything,
+        // because there was no suspension point to cancel at.
+        @Sendable func report(_ step: FitStep) async {
+            onStep?(step)
+            await Task.yield()
+        }
         let started = Date()
         var transformations: [Transformation] = []
 
         // 1. Normalise, always first.
+        await report(.reading)
         let facts = try ImageNormaliser.facts(of: url)
         transformations.append(.decoded(from: facts.type?.localizedDescription ?? "unknown format"))
 
+        await report(.convertingColour)
         let upright = try ImageNormaliser.normalise(url: url, facts: facts)
         transformations.append(.convertedColor(
             from: facts.profileName ?? "untagged",
             to: "sRGB IEC61966-2.1"
         ))
+        await report(.removingMetadata)
         var stripped: [String] = []
         if facts.hasEXIF { stripped.append("EXIF") }
         if facts.hasGPS { stripped.append("location data") }
         transformations.append(.strippedMetadata(kinds: stripped))
 
-        let cropped = ImageNormaliser.croppedSize(of: upright, aspect: spec.aspect)
+        let cropped = ImageNormaliser.croppedSize(of: upright, aspect: spec.aspect, rect: crop)
         if cropped != PixelSize(width: upright.width, height: upright.height) {
+            await report(.cropping(cropped.label))
             transformations.append(.cropped(
                 to: cropped.label,
                 from: ByteFormat.size(upright.width, upright.height)
@@ -94,8 +113,13 @@ public actor FitEngine {
             tried.append(size.label)
             seenFactors.append(factor)
 
-            let rendered = try ImageNormaliser.render(upright, aspect: spec.aspect, to: size)
-            let probe = try search(rendered, size: size, spec: spec, aim: aim, encodes: &encodes)
+            await report(.resizing(size.label))
+            let rendered = try ImageNormaliser.render(
+                upright, aspect: spec.aspect, to: size, crop: crop
+            )
+            await report(.findingQuality)
+            try Task.checkCancellation()
+            let probe = try await search(rendered, size: size, spec: spec, aim: aim, encodes: &encodes)
 
             switch probe.outcome {
             case .landed(let quality, let bytes, let file):
@@ -157,6 +181,7 @@ public actor FitEngine {
         transformations.append(.encoded(quality: winner.quality))
 
         // 4. Verify by re-reading what is actually on disk.
+        await report(.verifying)
         let verification = OutputVerifier.verify(winner.url, against: spec, expecting: winner.size)
         guard verification.passed else {
             workspace.discardAll(except: nil)
@@ -276,7 +301,7 @@ public actor FitEngine {
         spec: UploadSpec,
         aim: Targets,
         encodes: inout Int
-    ) throws -> Probe {
+    ) async throws -> Probe {
         // No probes at the extremes. Two encodes per size spent establishing
         // what q0.5 and q1.0 weigh is two encodes not spent finding the answer,
         // and most sizes never go near either end. Start where a photograph
@@ -296,6 +321,8 @@ public actor FitEngine {
             )
             encodes += 1
             lastBytes = bytes
+            try Task.checkCancellation()
+            await Task.yield()
 
             if bytes > aim.ceiling {
                 highQuality = quality

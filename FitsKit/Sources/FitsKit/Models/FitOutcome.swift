@@ -18,6 +18,18 @@ public struct SourceFacts: Sendable, Hashable {
     /// Orientation as recorded in EXIF (1 when absent or upright).
     public let orientation: Int
 
+    /// Dimensions after the EXIF orientation is applied.
+    ///
+    /// What ImageIO reports is the stored size, which for a phone photo taken
+    /// in portrait is usually the landscape one — IMG_1335 reports 5712 × 4284
+    /// with orientation 6 and is really 4284 × 5712. The UI must use these, or
+    /// the crop rectangle is drawn on a frame the photo does not have.
+    public var uprightWidth: Int { (5...8).contains(orientation) ? pixelHeight : pixelWidth }
+    public var uprightHeight: Int { (5...8).contains(orientation) ? pixelWidth : pixelHeight }
+    public var uprightSize: PixelSize {
+        PixelSize(width: uprightWidth, height: uprightHeight)
+    }
+
     public init(
         pixelWidth: Int, pixelHeight: Int, byteCount: Int, type: UTType?,
         profileName: String?, hasEXIF: Bool, hasGPS: Bool, orientation: Int

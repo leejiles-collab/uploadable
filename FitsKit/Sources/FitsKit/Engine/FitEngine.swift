@@ -166,6 +166,23 @@ public actor FitEngine {
         let named = rename(winner.url, to: outputName, spec: spec)
         workspace.discardAll(except: named)
 
+        // 5. Things that are true but that the ticks do not cover. Never a
+        //    failure — the file measurably meets the spec.
+        var warnings: [FitWarning] = []
+        if !spec.statesPixelFloor,
+           let floor = SpecCatalog.commonShortEdgeMinimum,
+           min(winner.size.width, winner.size.height) < floor {
+            warnings.append(.belowCommonMinimum(
+                short: min(winner.size.width, winner.size.height),
+                floor: floor,
+                size: winner.size.label,
+                cropsAfterUpload: spec.cropsAfterUpload
+            ))
+        }
+        if winner.quality < Config.acceptableQuality {
+            warnings.append(.softerThanPreferred(quality: winner.quality))
+        }
+
         return Fit(
             url: named,
             spec: spec,
@@ -179,7 +196,8 @@ public actor FitEngine {
             hitEncodeCap: hitCap || encodes >= Config.maxEncodes,
             elapsed: Date().timeIntervalSince(started),
             transformations: transformations,
-            verification: verification
+            verification: verification,
+            warnings: warnings
         )
     }
 

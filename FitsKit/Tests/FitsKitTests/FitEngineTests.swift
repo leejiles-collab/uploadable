@@ -218,6 +218,74 @@ struct FitEngineTests {
         await engine.discardOutputs()
     }
 
+    // MARK: - The sanity floor
+
+    /// The floor is derived from the catalog, never typed in. If someone
+    /// "simplifies" it to a constant this fails.
+    @Test func theCommonMinimumIsDerivedFromTheCatalogNotHardcoded() {
+        let stated = SpecCatalog.all.compactMap(\.shortEdgeMinimum)
+        #expect(!stated.isEmpty)
+        #expect(SpecCatalog.commonShortEdgeMinimum == stated.min())
+        // True today, and the assertion above is what keeps it honest if it
+        // stops being true.
+        #expect(SpecCatalog.commonShortEdgeMinimum == 600)
+    }
+
+    /// A screenshot passes US Passport — the page genuinely states no minimum —
+    /// but it does not pass quietly.
+    @Test func anOpenEndedSpecPassesATinySourceButWarns() async throws {
+        let url = try Self.writeJPEG(Self.noisyImage(width: 398, height: 600))
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let engine = try FitEngine()
+        let fit = try await engine.fit(url: url, to: SpecCatalog.usPassport)
+
+        #expect(fit.verification.passed, "the file does meet the stated requirements")
+        #expect(SpecCatalog.usPassport.bytes.contains(fit.byteCount))
+        guard case .belowCommonMinimum(_, let floor, _, let crops)? = fit.warnings.first else {
+            Issue.record("no size warning on a 398 × 600 result: \(fit.warnings)")
+            return
+        }
+        #expect(floor == 600)
+        #expect(crops, "US Passport crops after upload and the warning should say so")
+        // The warning is about the file, never the photograph.
+        let text = fit.warnings.map(\.message).joined().lowercased()
+        for forbidden in ["blurry", "quality of your photo", "face", "enhance", "retouch"] {
+            #expect(!text.contains(forbidden), "warning strayed onto the photograph: \(text)")
+        }
+        await engine.discardOutputs()
+    }
+
+    /// A spec that publishes its own floor must never receive the derived one.
+    @Test func aSpecWithAStatedFloorNeverGetsTheDerivedWarning() async throws {
+        let url = try Self.writeJPEG(Self.noisyImage(width: 1400, height: 1400))
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let engine = try FitEngine()
+        for spec in SpecCatalog.all where spec.statesPixelFloor {
+            guard let fit = try? await engine.fit(url: url, to: spec) else { continue }
+            for warning in fit.warnings {
+                if case .belowCommonMinimum = warning {
+                    Issue.record("\(spec.id) states its own floor but got the derived warning")
+                }
+            }
+        }
+        await engine.discardOutputs()
+    }
+
+    /// A warning is never a failure.
+    @Test func warningsDoNotTurnAPassIntoAFailure() async throws {
+        let url = try Self.writeJPEG(Self.noisyImage(width: 398, height: 600))
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let engine = try FitEngine()
+        let fit = try await engine.fit(url: url, to: SpecCatalog.usPassport)
+        #expect(!fit.warnings.isEmpty)
+        #expect(fit.verification.passed)
+        #expect(fit.verification.failures.isEmpty)
+        await engine.discardOutputs()
+    }
+
     // MARK: - Verification
 
     @Test func theRawJPEGParserAgreesWithImageIO() throws {

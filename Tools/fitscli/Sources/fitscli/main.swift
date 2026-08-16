@@ -139,6 +139,7 @@ func fit(_ urls: [URL], specID: String, outDirectory: URL) async throws {
                 + "  \(String(format: "%.2fs", result.elapsed))"
                 + "  \(result.verification.passed ? "verified" : "VERIFICATION FAILED")"
                 + "\(result.hitEncodeCap ? "  ENCODE CAP HIT" : "")")
+            for warning in result.warnings { print("      warning: \(warning.message)") }
         } catch let failure as FitFailure {
             print("\(url.lastPathComponent)  ->  \(failure.message)")
         }
@@ -266,9 +267,14 @@ func report(_ urls: [URL], outDirectory: URL) async throws {
                 let fit = try await engine.fit(url: url, to: spec, outputName: "\(stem)-\(spec.id)")
                 let out = visual.appendingPathComponent("\(stem)-\(spec.id).png")
                 writePNG(fit.url, to: out)
-                let checks = fit.verification.checks
+                var checks = fit.verification.checks
                     .map { "\($0.passed ? "ok" : "FAIL") \($0.name)" }
                     .joined(separator: "<br>")
+                if !fit.warnings.isEmpty {
+                    checks += "<br>" + fit.warnings
+                        .map { "WARN \($0.message)" }
+                        .joined(separator: "<br>")
+                }
                 print("| \(spec.name) | fit | \(ByteFormat.size(fit.pixelWidth, fit.pixelHeight)) "
                     + "| \(ByteFormat.string(fit.byteCount)) "
                     + "| \(spec.bytes.contains(fit.byteCount) ? "yes" : "NO") "

@@ -65,6 +65,28 @@ public struct UploadSpec: Sendable, Identifiable, Hashable {
         return bytes.lowerBound > 0
     }
 
+    /// Whether the official page states any pixel floor at all.
+    ///
+    /// The sanity floor applies only where this is false, so a derived
+    /// heuristic can never overrule a government that has actually published a
+    /// number.
+    public var statesPixelFloor: Bool { width != nil || height != nil }
+
+    /// The shortest edge this spec demands, when it demands one.
+    public var shortEdgeMinimum: Int? {
+        guard let width, let height else { return nil }
+        return min(width.lowerBound, height.lowerBound)
+    }
+
+    /// Whether the portal crops the photo again after upload.
+    ///
+    /// Stated on the US Passport upload page: the applicant crops inside the
+    /// State Department's own tool. It matters because it means the pixels that
+    /// survive to the final photo are fewer than the ones in the file, which is
+    /// the honest reason a technically-acceptable small file is still a bad
+    /// idea there.
+    public let cropsAfterUpload: Bool
+
     /// Whether the portal insists on the format we emit, or merely allows it.
     /// Worth saying out loud in the UI: "JPEG" reads as a requirement, and for
     /// several specs it is only a choice.
@@ -90,7 +112,8 @@ public struct UploadSpec: Sendable, Identifiable, Hashable {
         exif: EXIFPolicy = .stripAll,
         icc: ICCPolicy = .embedSRGB,
         source: SpecSource,
-        caveats: [String] = []
+        caveats: [String] = [],
+        cropsAfterUpload: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -106,6 +129,7 @@ public struct UploadSpec: Sendable, Identifiable, Hashable {
         self.icc = icc
         self.source = source
         self.caveats = caveats
+        self.cropsAfterUpload = cropsAfterUpload
     }
 }
 

@@ -36,6 +36,24 @@ public enum SpecCatalog {
     /// approximately right.
     public static var drafts: [UploadSpec] { [usDVLottery, schengen] }
 
+    /// The smallest short edge any offered spec actually asks for.
+    ///
+    /// Derived, not chosen. Several specs — US Passport, India's eVisa, New
+    /// Zealand's — publish no pixel floor whatsoever, which means a 398 × 600
+    /// screenshot technically satisfies them. That is true and useless: the
+    /// photo will be rejected on grounds Fits deliberately does not check.
+    ///
+    /// Rather than invent a threshold, this asks the rest of the catalog what
+    /// the world considers too small. Today DS-160 and UK Passport both floor
+    /// at 600 and Canada at 715, so it comes out 600 — but nobody typed 600.
+    /// If a government revises a number, or a preset is added or dropped, this
+    /// moves with it.
+    ///
+    /// DO NOT replace this with a constant. The point is that it is sourced.
+    public static var commonShortEdgeMinimum: Int? {
+        all.compactMap(\.shortEdgeMinimum).min()
+    }
+
     public static func spec(id: String) -> UploadSpec? {
         (all + drafts).first { $0.id == id }
     }
@@ -200,7 +218,8 @@ public enum SpecCatalog {
             + "the photo inside the State Department's own tool after uploading.",
             "JPG, JPEG, PNG, HEIC and HEIF are all accepted. Fits writes JPEG, "
             + "which is on the list."
-        ]
+        ],
+        cropsAfterUpload: true
     )
 
     /// DRAFT. The official page has been removed.

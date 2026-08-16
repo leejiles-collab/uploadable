@@ -80,6 +80,48 @@ public struct Verification: Sendable, Hashable {
     public init(checks: [Check]) { self.checks = checks }
 }
 
+/// Something true about a result that the green ticks do not cover.
+///
+/// A warning never turns a pass into a failure. The file does meet the stated
+/// requirements — that is measured — and Fits does not get to overrule a
+/// government about its own form. It sits alongside the ticks, not instead of
+/// them.
+///
+/// Both cases are deliberately about the *file*. Fits changes files, not
+/// photographs, and a warning that strayed into commenting on the picture would
+/// be the app doing exactly the thing it promises not to.
+public enum FitWarning: Sendable, Hashable {
+    /// The form states no minimum size, and the result is smaller than every
+    /// form that does state one.
+    case belowCommonMinimum(short: Int, floor: Int, size: String, cropsAfterUpload: Bool)
+    /// In band, but compressed harder than we would choose. "Blurry" and
+    /// "pixelated" are named rejection reasons on State's own page.
+    case softerThanPreferred(quality: Double)
+
+    public var message: String {
+        switch self {
+        case .belowCommonMinimum(_, _, let size, let crops):
+            "This is \(size). The form doesn't state a minimum, but it's smaller "
+            + "than every other form we know of requires"
+            + (crops ? ", and you'll be cropping it further during upload." : ".")
+        case .softerThanPreferred:
+            "This had to be compressed harder than we'd like to fit the size limit."
+        }
+    }
+
+    /// What it means for the person, without straying into their photograph.
+    public var detail: String? {
+        switch self {
+        case .belowCommonMinimum:
+            "The file is within the stated requirements, so it will upload. "
+            + "A larger original would leave more detail in the finished photo."
+        case .softerThanPreferred:
+            "It meets the size requirement. A higher-resolution original would "
+            + "let it meet the same limit with less compression."
+        }
+    }
+}
+
 /// A file that meets the spec.
 public struct Fit: Sendable, Hashable {
     public let url: URL
@@ -100,13 +142,16 @@ public struct Fit: Sendable, Hashable {
     public let elapsed: TimeInterval
     public let transformations: [Transformation]
     public let verification: Verification
+    /// True things the ticks do not cover. Never a failure.
+    public let warnings: [FitWarning]
 
     public init(
         url: URL, spec: UploadSpec, source: SourceFacts,
         pixelWidth: Int, pixelHeight: Int, byteCount: Int, quality: Double,
         candidatesTried: [String], encodeCount: Int, hitEncodeCap: Bool,
         elapsed: TimeInterval,
-        transformations: [Transformation], verification: Verification
+        transformations: [Transformation], verification: Verification,
+        warnings: [FitWarning] = []
     ) {
         self.url = url
         self.spec = spec
@@ -121,6 +166,7 @@ public struct Fit: Sendable, Hashable {
         self.elapsed = elapsed
         self.transformations = transformations
         self.verification = verification
+        self.warnings = warnings
     }
 }
 

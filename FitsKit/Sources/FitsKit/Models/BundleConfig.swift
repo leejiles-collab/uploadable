@@ -22,7 +22,7 @@ public enum Config {
 
     /// Hard cap on encodes for a single fit. Expect 5–8; this only exists so a
     /// pathological image cannot spin.
-    public static let maxEncodes = 24
+    public static let maxEncodes = 32
 
     /// Quality range the solver will search. Below the floor a photo of a face
     /// starts showing blocking, and shipping that to a government portal is how
@@ -59,7 +59,7 @@ public enum Config {
     /// How many distinct sizes one fit may try. Each costs a handful of
     /// encodes, so this is what actually keeps a fit inside `maxEncodes`
     /// rather than the encode count noticing too late.
-    public static let maxSizes = 4
+    public static let maxSizes = 6
 
     /// What a photograph should weigh when the spec leaves room to choose.
     ///

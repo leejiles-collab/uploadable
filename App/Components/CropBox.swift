@@ -143,50 +143,39 @@ struct CropBox: View {
 }
 
 /// The rectangle itself: a light border with corner ticks, nothing decorative.
+///
+/// Drawn in a single `Canvas` rather than as four `Path` views. A bare
+/// `Path { }.stroke()` is a view sized to its own bounds, so a `ForEach` of
+/// four of them gets each one laid out by the parent instead of left where it
+/// was drawn — all four ticks ended up stacked in the middle of the rectangle.
+/// A Canvas draws in the coordinates it is given and nothing moves afterwards.
 private struct CropFrame: View {
+    private let inset: CGFloat = 1.5
+
     var body: some View {
-        ZStack {
-            Rectangle().stroke(.white, lineWidth: 2)
-            GeometryReader { geometry in
-                let length = min(24, min(geometry.size.width, geometry.size.height) / 3)
-                ForEach(Corner.allCases, id: \.self) { corner in
-                    Path { path in
-                        let point = corner.point(in: geometry.size)
-                        path.move(to: CGPoint(x: point.x + corner.dx * length, y: point.y))
-                        path.addLine(to: point)
-                        path.addLine(to: CGPoint(x: point.x, y: point.y + corner.dy * length))
-                    }
-                    .stroke(.white, style: StrokeStyle(lineWidth: 5, lineCap: .round))
-                }
+        Canvas { context, size in
+            let rect = CGRect(origin: .zero, size: size).insetBy(dx: inset, dy: inset)
+            context.stroke(Path(rect), with: .color(.white.opacity(0.9)), lineWidth: 1.5)
+
+            let length = min(26, min(rect.width, rect.height) / 3)
+            var ticks = Path()
+            // Each corner: in along the top or bottom edge, then down the side.
+            for (corner, dx, dy) in [
+                (CGPoint(x: rect.minX, y: rect.minY), 1.0, 1.0),
+                (CGPoint(x: rect.maxX, y: rect.minY), -1.0, 1.0),
+                (CGPoint(x: rect.minX, y: rect.maxY), 1.0, -1.0),
+                (CGPoint(x: rect.maxX, y: rect.maxY), -1.0, -1.0)
+            ] {
+                ticks.move(to: CGPoint(x: corner.x + dx * length, y: corner.y))
+                ticks.addLine(to: corner)
+                ticks.addLine(to: CGPoint(x: corner.x, y: corner.y + dy * length))
             }
+            context.stroke(
+                ticks,
+                with: .color(.white),
+                style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
+            )
         }
         .contentShape(Rectangle())
-    }
-
-    private enum Corner: CaseIterable {
-        case topLeading, topTrailing, bottomLeading, bottomTrailing
-
-        func point(in size: CGSize) -> CGPoint {
-            switch self {
-            case .topLeading: CGPoint(x: 2, y: 2)
-            case .topTrailing: CGPoint(x: size.width - 2, y: 2)
-            case .bottomLeading: CGPoint(x: 2, y: size.height - 2)
-            case .bottomTrailing: CGPoint(x: size.width - 2, y: size.height - 2)
-            }
-        }
-
-        var dx: CGFloat {
-            switch self {
-            case .topLeading, .bottomLeading: 1
-            case .topTrailing, .bottomTrailing: -1
-            }
-        }
-
-        var dy: CGFloat {
-            switch self {
-            case .topLeading, .topTrailing: 1
-            case .bottomLeading, .bottomTrailing: -1
-            }
-        }
     }
 }

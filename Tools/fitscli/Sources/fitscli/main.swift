@@ -72,20 +72,11 @@ func verifiedLabel(_ spec: UploadSpec) -> String {
 }
 
 func describe(_ spec: UploadSpec) -> String {
-    let dims: String
-    if let w = spec.width, let h = spec.height {
-        let top = w.upperBound >= SpecCatalog.noStatedMaximum
-            ? "no stated maximum"
-            : ByteFormat.size(w.upperBound, h.upperBound)
-        dims = "\(ByteFormat.size(w.lowerBound, h.lowerBound)) to \(top)"
-    } else {
-        dims = "not stated"
-    }
     let formats = spec.accepted
         .compactMap { $0.preferredFilenameExtension?.uppercased() }
         .sorted()
         .joined(separator: "/")
-    return "\(spec.aspect.label) · \(dims) · \(ByteFormat.band(spec.bytes)) · \(formats)"
+    return "\(spec.requirementSummary) · \(formats)"
 }
 
 // MARK: - inspect

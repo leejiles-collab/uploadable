@@ -204,7 +204,7 @@ struct SpecRow: View {
                     Text(spec.name)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
-                    Text(subtitleOverride ?? requirements)
+                    Text(subtitleOverride ?? spec.requirementSummary)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
@@ -231,15 +231,6 @@ struct SpecRow: View {
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
-    private var requirements: String {
-        var parts: [String] = []
-        if spec.aspect.value != nil { parts.append(spec.aspect.label) }
-        if let width = spec.width, let height = spec.height {
-            parts.append("\(ByteFormat.size(width.lowerBound, height.lowerBound)) and up")
-        }
-        parts.append(ByteFormat.band(spec.bytes))
-        return parts.joined(separator: " · ")
-    }
 }
 
 private struct NumberField: View {

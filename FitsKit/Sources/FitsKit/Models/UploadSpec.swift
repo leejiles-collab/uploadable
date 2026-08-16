@@ -87,6 +87,28 @@ public struct UploadSpec: Sendable, Identifiable, Hashable {
     /// idea there.
     public let cropsAfterUpload: Bool
 
+    /// The pixel requirement in words, or nil when the spec states none.
+    ///
+    /// "and up" is only honest where a spec genuinely publishes no maximum —
+    /// UK Passport says at least 600 × 750 and stops there. DS-160 publishes
+    /// 600 × 600 *to 1200 × 1200*, and showing that as "600 × 600 and up" hides
+    /// half the requirement from the person deciding whether their photo fits.
+    public var pixelSummary: String? {
+        guard let width, let height else { return nil }
+        let low = ByteFormat.size(width.lowerBound, height.lowerBound)
+        guard width.upperBound < SpecCatalog.noStatedMaximum else { return "\(low) and up" }
+        return "\(low) to \(ByteFormat.size(width.upperBound, height.upperBound))"
+    }
+
+    /// The whole requirement on one line, for a list row or a report table.
+    public var requirementSummary: String {
+        var parts: [String] = []
+        if aspect.value != nil { parts.append(aspect.label) }
+        parts.append(pixelSummary ?? "any size")
+        parts.append(ByteFormat.band(bytes))
+        return parts.joined(separator: " · ")
+    }
+
     /// Whether the portal insists on the format we emit, or merely allows it.
     /// Worth saying out loud in the UI: "JPEG" reads as a requirement, and for
     /// several specs it is only a choice.

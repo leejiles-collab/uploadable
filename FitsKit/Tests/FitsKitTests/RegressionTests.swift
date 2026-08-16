@@ -95,6 +95,79 @@ struct RegressionTests {
         #expect(abs(pixels.midX - Double(size.width) / 2) < 2, "not horizontally centred")
     }
 
+    // MARK: - Treating a limit as a target
+
+    /// The Done screen showed 768 × 768 and 127 KB for DS-160, which allows
+    /// 1200 × 1200 and 240 KB — less than half the allowance, on a photo a
+    /// consular officer inspects for sharpness.
+    ///
+    /// The cause was aiming `lowerBound + 0.6 * span` into a band whose lower
+    /// bound is zero. That is the right aim when a spec has a real floor and a
+    /// file can fail for being too small; it is wrong when the number is a
+    /// limit rather than a range.
+    @Test func aCeilingOnlySpecFillsItsAllowance() async throws {
+        let url = try FitEngineTests.writeJPEG(
+            FitEngineTests.noisyImage(width: 4284, height: 5712), quality: 0.95
+        )
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let engine = try FitEngine()
+        let fit = try await engine.fit(url: url, to: SpecCatalog.usVisa)
+
+        #expect(fit.pixelWidth > 900, "shrank to \(fit.pixelWidth) px when 1200 was allowed")
+        #expect(fit.byteCount > 180_000, "used \(fit.byteCount) bytes of a 240 KB allowance")
+        #expect(SpecCatalog.usVisa.bytes.contains(fit.byteCount))
+        #expect(fit.verification.passed)
+        await engine.discardOutputs()
+    }
+
+    /// The two shapes must be told apart by the spec, not by name.
+    @Test func specsAreClassifiedAsCeilingOrBand() {
+        // No stated minimum: a limit.
+        #expect(Targets(spec: SpecCatalog.usVisa).isCeilingOnly)
+        #expect(Targets(spec: SpecCatalog.canadaPR).isCeilingOnly)
+        // A real floor: a range, and a file can fail for being under it.
+        #expect(!Targets(spec: SpecCatalog.newZealand).isCeilingOnly)
+        #expect(!Targets(spec: SpecCatalog.usPassport).isCeilingOnly)
+        #expect(!Targets(spec: SpecCatalog.indiaEVisa).isCeilingOnly)
+        #expect(!Targets(spec: SpecCatalog.ukPassport).isCeilingOnly)
+
+        // A ceiling aims at the top; a band aims inside it.
+        #expect(Targets(spec: SpecCatalog.usVisa).target > 200_000)
+        // And the cap that stopped an 8 MB passport photo still holds.
+        #expect(Targets(spec: SpecCatalog.ukPassport).target <= Config.preferredBytes)
+    }
+
+    // MARK: - Hiding half a requirement
+
+    /// The DS-160 row read "Square · 600 × 600 and up · up to 240 KB". There is
+    /// a 1200 × 1200 maximum, and "and up" hid it from the person deciding
+    /// whether their photo fits.
+    @Test func aSpecWithAPixelMaximumShowsIt() {
+        #expect(SpecCatalog.usVisa.pixelSummary == "600 × 600 to 1200 × 1200")
+        #expect(SpecCatalog.canadaPR.pixelSummary == "715 × 1000 to 2000 × 2800")
+        #expect(SpecCatalog.usVisa.requirementSummary.contains("1200 × 1200"))
+
+        // "and up" is correct only where no maximum is published.
+        #expect(SpecCatalog.ukPassport.pixelSummary == "600 × 750 and up")
+
+        // And a spec that states no pixels at all must not invent any.
+        #expect(SpecCatalog.indiaEVisa.pixelSummary == nil)
+        #expect(SpecCatalog.newZealand.pixelSummary == nil)
+    }
+
+    /// Every offered spec's row must name its real bounds.
+    @Test func noOfferedSpecHidesAStatedMaximum() {
+        for spec in SpecCatalog.all {
+            guard let width = spec.width, width.upperBound < SpecCatalog.noStatedMaximum else { continue }
+            let summary = spec.pixelSummary ?? ""
+            #expect(!summary.contains("and up"),
+                    "\(spec.id) publishes a maximum but its row says 'and up'")
+            #expect(summary.contains("\(width.upperBound)"),
+                    "\(spec.id) does not show its maximum")
+        }
+    }
+
     // MARK: - The async path
 
     /// Collects steps from the engine's callback, which fires off the actor.

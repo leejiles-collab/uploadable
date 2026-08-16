@@ -123,7 +123,7 @@ public actor FitEngine {
 
             switch probe.outcome {
             case .landed(let quality, let bytes, let file):
-                if quality >= Config.acceptableQuality {
+                if aim.isCeilingOnly || quality >= Config.acceptableQuality {
                     best = (size, quality, bytes, file)
                 } else if compromise == nil || quality > compromise!.quality {
                     // Fewer pixels for the same byte budget buys quality, which
@@ -409,26 +409,46 @@ public actor FitEngine {
 }
 
 /// The byte size a fit is trying to hit, and the window it will accept.
+///
+/// Two shapes of spec, and they want opposite things.
+///
+/// **A band.** New Zealand wants 512 KB to 3.14 MB, US Passport 54 KB to 10 MB.
+/// A real floor means a file can fail for being too small, so the aim goes
+/// inside the band with clearance at both ends — capped by `preferredBytes`,
+/// because sixty percent of the way into UK Passport's 10 MB ceiling is a
+/// six-megabyte passport photo.
+///
+/// **A ceiling.** DS-160 says "240 KB or less" and states no minimum at all.
+/// Aiming into the middle of that treats a limit as a target and throws away
+/// half the allowance: the same photo landed at 768 × 768 and 127 KB when
+/// 1200 × 1200 and 240 KB were permitted. Nobody is helped by a smaller file
+/// here — a human inspects these for sharpness, and every pixel and every byte
+/// under the cap is free. So the aim goes just under the maximum, and the
+/// search does not trade resolution away for quality it does not need.
 struct Targets {
     /// What to aim for.
     let target: Int
     /// The acceptable window, held clear of the band's edges.
     let floor: Int
     let ceiling: Int
+    /// The spec states no byte minimum, so the band is really a limit and
+    /// bigger is strictly better.
+    let isCeilingOnly: Bool
 
     init(spec: UploadSpec) {
         let span = Double(spec.bytes.upperBound - spec.bytes.lowerBound)
         let clearance = min(span * Config.bandEdgeClearance, span / 2)
         floor = spec.bytes.lowerBound + Int(clearance)
         ceiling = spec.bytes.upperBound - Int(clearance)
+        isCeilingOnly = spec.bytes.lowerBound == 0
 
-        // A fraction of the band is only meaningful when the band is narrow.
-        // UK Passport allows 50 KB to 10 MB, and 60% into that is 6 MB — a
-        // passport photo, produced at six megabytes, technically in range and
-        // obviously wrong. So the fraction is capped by an absolute size that
-        // is generous for a photograph and absurd for nothing.
-        let proportional = Double(spec.bytes.lowerBound) + span * Config.bandTargetFraction
-        let capped = min(proportional, Double(Config.preferredBytes))
-        target = max(floor, min(ceiling, Int(capped)))
+        if isCeilingOnly {
+            // Fill the allowance, staying clear of the edge.
+            target = ceiling
+        } else {
+            let proportional = Double(spec.bytes.lowerBound) + span * Config.bandTargetFraction
+            let capped = min(proportional, Double(Config.preferredBytes))
+            target = max(floor, min(ceiling, Int(capped)))
+        }
     }
 }

@@ -6,8 +6,22 @@ import CoreGraphics
 /// The search is two-dimensional: dimensions on the outside, JPEG quality on
 /// the inside. Compressors that only search quality can hit a byte *ceiling*
 /// but have no answer at all for a byte *floor*, because the only lever they
-/// have makes files smaller. Stepping up the dimension ladder answers it with
-/// real image data instead of padding.
+/// have makes files smaller. Changing the pixel count answers it with real
+/// image data instead of padding.
+///
+/// ## How the outer loop moves
+///
+/// A fixed ladder walked largest-first was the first attempt and it was wrong
+/// twice over. It burned encodes on rungs that were obviously too big, and when
+/// a spec stated no pixel bounds the rungs spread so far apart that the answer
+/// fell between two of them and the fit was refused — a 4284 × 5712 photo was
+/// turned down for New Zealand because the ladder went straight from full size
+/// to 530 × 707.
+///
+/// So the ladder is now a starting suggestion, and the loop is a bracketed
+/// search: measure, predict where the answer is from what was measured, keep a
+/// known-too-big and known-too-small bound, and converge. Every accepted number
+/// is still measured; prediction only chooses where to look next.
 public actor FitEngine {
 
     private let workspace: TempWorkspace
@@ -16,7 +30,6 @@ public actor FitEngine {
         workspace = try TempWorkspace(name: "fits-out")
     }
 
-    /// Drops every file this engine produced.
     public func discardOutputs() {
         workspace.discardAll(except: nil)
     }
@@ -29,8 +42,7 @@ public actor FitEngine {
         let started = Date()
         var transformations: [Transformation] = []
 
-        // 1. Normalise, always first. Everything after this works on pixels we
-        //    control, in a colour space we chose.
+        // 1. Normalise, always first.
         let facts = try ImageNormaliser.facts(of: url)
         transformations.append(.decoded(from: facts.type?.localizedDescription ?? "unknown format"))
 
@@ -44,7 +56,6 @@ public actor FitEngine {
         if facts.hasGPS { stripped.append("location data") }
         transformations.append(.strippedMetadata(kinds: stripped))
 
-        // 2. The ladder. Never proposes a size the source cannot really fill.
         let cropped = ImageNormaliser.croppedSize(of: upright, aspect: spec.aspect)
         if cropped != PixelSize(width: upright.width, height: upright.height) {
             transformations.append(.cropped(
@@ -52,57 +63,91 @@ public actor FitEngine {
                 from: ByteFormat.size(upright.width, upright.height)
             ))
         }
-        let ladder = try DimensionLadder.build(croppedSource: cropped, spec: spec)
 
-        // 3. Walk it, binary-searching quality at each rung.
+        // 2. Where the search may look, and where to start looking.
+        let range = try DimensionLadder.bounds(croppedSource: cropped, spec: spec)
+        let suggestions = try DimensionLadder.build(croppedSource: cropped, spec: spec)
+        let aim = Targets(spec: spec)
+
         var encodes = 0
         var tried: [String] = []
+        var seenFactors: [Double] = []
         var best: (size: PixelSize, quality: Double, bytes: Int, url: URL)?
-        /// Landed in band, but below the quality we would rather ship. Kept in
-        /// case nothing better turns up, because a real file at 0.66 still
-        /// beats refusing outright.
         var compromise: (size: PixelSize, quality: Double, bytes: Int, url: URL)?
-        var largestUndershoot: (size: PixelSize, bytes: Int)?
-        var smallestOvershoot: (size: PixelSize, bytes: Int)?
+        var undershoot: (size: PixelSize, bytes: Int)?
+        var overshoot: (size: PixelSize, bytes: Int)?
 
-        for size in ladder {
-            guard encodes < Config.maxEncodes else { break }
+        // The bracket. `low` is known to undershoot the byte floor, `high` is
+        // known to overshoot the ceiling; the answer lies between them.
+        var low: Double?
+        var high: Double?
+        var factor = range.top
+
+        // Budget for a whole size, not one encode: starting a size with two
+        // encodes left produces a truncated search that looks like a finished
+        // one.
+        while tried.count < Config.maxSizes, encodes + Config.qualitySteps <= Config.maxEncodes {
+            guard let size = DimensionLadder.size(
+                forFactor: factor, croppedSource: cropped, spec: spec
+            ) else { break }
+            if tried.contains(size.label) { break }
             tried.append(size.label)
-            let rendered = try ImageNormaliser.render(upright, aspect: spec.aspect, to: size)
-            let attempt = try search(rendered, size: size, spec: spec, encodes: &encodes)
+            seenFactors.append(factor)
 
-            switch attempt {
+            let rendered = try ImageNormaliser.render(upright, aspect: spec.aspect, to: size)
+            let probe = try search(rendered, size: size, spec: spec, aim: aim, encodes: &encodes)
+
+            switch probe.outcome {
             case .landed(let quality, let bytes, let file):
                 if quality >= Config.acceptableQuality {
-                    // Good enough, and the ladder runs largest-first, so this is
-                    // also the most detail we can get at this quality.
                     best = (size, quality, bytes, file)
                 } else if compromise == nil || quality > compromise!.quality {
-                    // Keep walking down. The same byte budget spread over fewer
-                    // pixels buys quality, which is the whole reason dimensions
-                    // are the outer loop.
+                    // Fewer pixels for the same byte budget buys quality, which
+                    // is the whole reason dimensions are the outer loop.
                     compromise = (size, quality, bytes, file)
                 }
-            case .tooSmall(let bytes):
-                if largestUndershoot == nil { largestUndershoot = (size, bytes) }
-            case .tooBig(let bytes):
-                smallestOvershoot = (size, bytes)
+
+            case .tooSmall(let atFullQuality):
+                // The undershoot answer: more pixels, not more compression.
+                undershoot = (size, atFullQuality)
+                low = factor
+                if factor >= range.top { break }
+
+            case .tooBig(let atLowestQuality):
+                overshoot = (size, atLowestQuality)
+                high = factor
+                if factor <= range.bottom { break }
             }
+
             if best != nil { break }
+
+            guard let next = nextFactor(
+                after: factor, probe: probe, aim: aim,
+                low: low, high: high, range: range,
+                suggestions: suggestions, cropped: cropped, spec: spec, seen: seenFactors
+            ) else { break }
+            factor = next
         }
+
+        let hitCap = encodes >= Config.maxEncodes && best == nil && compromise == nil
         if best == nil { best = compromise }
 
-        // 4 & 5. Nothing landed. Say which wall we hit and what would move it.
+        // 3. Nothing landed. Say which wall we hit and what would move it.
         guard let winner = best else {
             workspace.discardAll(except: nil)
-            if let under = largestUndershoot {
+            if let under = undershoot, overshoot == nil {
                 throw FitFailure.belowMinimumBytes(
                     got: under.bytes, need: spec.bytes.lowerBound, atSize: under.size.label
                 )
             }
-            if let over = smallestOvershoot {
+            if let over = overshoot {
                 throw FitFailure.aboveMaximumBytes(
                     got: over.bytes, limit: spec.bytes.upperBound, atSize: over.size.label
+                )
+            }
+            if let under = undershoot {
+                throw FitFailure.belowMinimumBytes(
+                    got: under.bytes, need: spec.bytes.lowerBound, atSize: under.size.label
                 )
             }
             throw FitFailure.unreadableSource("No size could be produced for this spec.")
@@ -111,7 +156,7 @@ public actor FitEngine {
         transformations.append(.resized(to: winner.size.label))
         transformations.append(.encoded(quality: winner.quality))
 
-        // 6. Verify by re-reading what is actually on disk.
+        // 4. Verify by re-reading what is actually on disk.
         let verification = OutputVerifier.verify(winner.url, against: spec, expecting: winner.size)
         guard verification.passed else {
             workspace.discardAll(except: nil)
@@ -131,91 +176,177 @@ public actor FitEngine {
             quality: winner.quality,
             candidatesTried: tried,
             encodeCount: encodes,
+            hitEncodeCap: hitCap || encodes >= Config.maxEncodes,
             elapsed: Date().timeIntervalSince(started),
             transformations: transformations,
             verification: verification
         )
     }
 
+    // MARK: - Where to look next
+
+    /// Predicts from what was just measured, then keeps the prediction inside
+    /// whatever bracket is already known.
+    ///
+    /// JPEG bytes track pixel count closely enough at a fixed quality that one
+    /// measurement is a good guide to the next size — and a prediction that
+    /// turns out wrong is caught by the next measurement, never trusted.
+    private func nextFactor(
+        after current: Double,
+        probe: Probe,
+        aim: Targets,
+        low: Double?,
+        high: Double?,
+        range: DimensionLadder.Bounds,
+        suggestions: [PixelSize],
+        cropped: PixelSize,
+        spec: UploadSpec,
+        seen: [Double]
+    ) -> Double? {
+        var predicted: Double?
+        if case .landed(let quality, _, _) = probe.outcome, quality < Config.acceptableQuality {
+            // Landed in band, but only by compressing harder than we would like
+            // to ship. Byte prediction is no help here — the bytes are already
+            // on target — so the lever is pixels: fewer of them carry the same
+            // byte budget at a higher quality. Step down and measure again.
+            predicted = current * Config.qualityRecoveryStep
+        } else if let measured = probe.reference, measured > 0 {
+            // Bytes go with area, so the linear scale goes with the square root.
+            let scale = (Double(aim.target) / Double(measured)).squareRoot()
+            predicted = current * scale
+        }
+
+        // Keep it strictly inside the bracket, so a bad prediction cannot
+        // bounce the search back to somewhere already ruled out.
+        let floorBound = low ?? range.bottom
+        let ceilingBound = high ?? range.top
+        guard floorBound < ceilingBound else { return nil }
+
+        var next = predicted ?? (floorBound * ceilingBound).squareRoot()
+        let margin = (ceilingBound - floorBound) * 0.02
+        if next <= floorBound + margin || next >= ceilingBound - margin {
+            next = (floorBound * ceilingBound).squareRoot()
+        }
+        next = min(max(next, range.bottom), range.top)
+
+        // Converged: the bracket is tighter than a rounding step.
+        if abs(next - current) / max(current, 0.0001) < 0.01 { return nil }
+        if seen.contains(where: { abs($0 - next) / max(next, 0.0001) < 0.01 }) { return nil }
+        return next
+    }
+
     // MARK: - Quality search
 
-    private enum Attempt {
+    private enum Outcome {
         case landed(quality: Double, bytes: Int, url: URL)
         /// Under the byte floor even at maximum quality. More pixels would fix it.
-        case tooSmall(bytes: Int)
+        case tooSmall(atFullQuality: Int)
         /// Over the byte ceiling even at the lowest quality we will ship.
-        case tooBig(bytes: Int)
+        case tooBig(atLowestQuality: Int)
+    }
+
+    private struct Probe {
+        let outcome: Outcome
+        /// A measured byte count at this size, used to predict the next size.
+        let reference: Int?
     }
 
     /// Binary-searches quality for one fixed size.
-    ///
-    /// Aims into the band rather than at its edge: a file two hundred bytes
-    /// under a limit is a file that fails the moment a portal counts kibibytes
-    /// instead of kilobytes.
     private func search(
         _ image: CGImage,
         size: PixelSize,
         spec: UploadSpec,
+        aim: Targets,
         encodes: inout Int
-    ) throws -> Attempt {
-        let span = Double(spec.bytes.upperBound - spec.bytes.lowerBound)
-        let clearance = span * Config.bandEdgeClearance
-        let aim = Double(spec.bytes.lowerBound) + span * Config.bandTargetFraction
-        let safeLow = Double(spec.bytes.lowerBound) + min(clearance, span / 2)
-        let safeHigh = Double(spec.bytes.upperBound) - min(clearance, span / 2)
-
-        // Is the ceiling reachable at all at this size?
-        let atFloorQuality = workspace.url(named: "probe-low-\(size.width)x\(size.height).jpg")
-        let lowBytes = try JPEGEncoder.encode(
-            image, to: atFloorQuality, quality: Config.qualityFloor,
-            exif: spec.exif, icc: spec.icc
-        )
-        encodes += 1
-        if lowBytes > spec.bytes.upperBound { return .tooBig(bytes: lowBytes) }
-
-        // Is the floor reachable at all at this size?
-        let atCeilingQuality = workspace.url(named: "probe-high-\(size.width)x\(size.height).jpg")
-        let highBytes = try JPEGEncoder.encode(
-            image, to: atCeilingQuality, quality: Config.qualityCeiling,
-            exif: spec.exif, icc: spec.icc
-        )
-        encodes += 1
-        if highBytes < spec.bytes.lowerBound { return .tooSmall(bytes: highBytes) }
-
-        // Maximum quality already sits in the band: take it, nothing beats it.
-        if spec.bytes.contains(highBytes), Double(highBytes) <= safeHigh {
-            return .landed(quality: Config.qualityCeiling, bytes: highBytes, url: atCeilingQuality)
-        }
-
-        var low = Config.qualityFloor
-        var high = Config.qualityCeiling
+    ) throws -> Probe {
+        // No probes at the extremes. Two encodes per size spent establishing
+        // what q0.5 and q1.0 weigh is two encodes not spent finding the answer,
+        // and most sizes never go near either end. Start where a photograph
+        // usually wants to be and bisect from there; the extremes get measured
+        // only if the search actually arrives at one.
+        var lowQuality = Config.qualityFloor
+        var highQuality = Config.qualityCeiling
         var landed: (Double, Int, URL)?
+        var quality = Config.startingQuality
+        var lastBytes = 0
 
-        for step in 0..<6 {
+        for step in 0..<Config.qualitySteps {
             guard encodes < Config.maxEncodes else { break }
-            let quality = ((low + high) / 2 * 100).rounded() / 100
             let candidate = workspace.url(named: "try-\(size.width)x\(size.height)-\(step).jpg")
             let bytes = try JPEGEncoder.encode(
                 image, to: candidate, quality: quality, exif: spec.exif, icc: spec.icc
             )
             encodes += 1
+            lastBytes = bytes
 
-            if Double(bytes) > safeHigh {
-                high = quality
-            } else if Double(bytes) < safeLow {
-                low = quality
+            if bytes > aim.ceiling {
+                highQuality = quality
+            } else if bytes < aim.floor {
+                lowQuality = quality
             } else {
-                landed = (quality, bytes, candidate)
-                // Close enough to the aim to stop refining.
-                if abs(Double(bytes) - aim) < span * 0.15 { break }
-                low = quality
+                // In band. Keep whichever landing sits closest to the target,
+                // and steer towards it rather than simply climbing.
+                //
+                // Climbing was the bug behind an 8.7 MB passport photo: every
+                // in-band result raised the quality floor, so a band topping out
+                // at 10 MB dragged the search all the way up. In band is not
+                // the same as right.
+                if landed == nil || abs(bytes - aim.target) < abs(landed!.1 - aim.target) {
+                    landed = (quality, bytes, candidate)
+                }
+                if abs(Double(bytes - aim.target)) < Double(aim.target) * 0.15 { break }
+                if bytes < aim.target { lowQuality = quality } else { highQuality = quality }
             }
-            if high - low < 0.01 { break }
+            if highQuality - lowQuality < 0.02 { break }
+            quality = ((lowQuality + highQuality) / 2 * 100).rounded() / 100
         }
 
-        if let landed { return .landed(quality: landed.0, bytes: landed.1, url: landed.2) }
-        // The search never found the band at this size. Report which side.
-        return lowBytes < spec.bytes.lowerBound ? .tooSmall(bytes: highBytes) : .tooBig(bytes: lowBytes)
+        if let landed {
+            return Probe(
+                outcome: .landed(quality: landed.0, bytes: landed.1, url: landed.2),
+                reference: landed.1
+            )
+        }
+
+        // The search never found the band at this size. Which side it missed on
+        // is decided by the last measurement, not by where the quality bracket
+        // happened to stop — four bisection steps do not drive the bracket to
+        // an edge, and reading the bracket instead of the bytes reported a
+        // 2.3 MB file as being under a 240 KB floor.
+        let overCeiling = lastBytes > spec.bytes.upperBound
+
+        // Measure the relevant extreme once, so the number shown to the user is
+        // one actually taken, and skip it when there is no budget left.
+        if encodes < Config.maxEncodes {
+            let edgeQuality = overCeiling ? Config.qualityFloor : Config.qualityCeiling
+            let name = overCeiling ? "edge-low" : "edge-high"
+            let url = workspace.url(named: "\(name)-\(size.width)x\(size.height).jpg")
+            let bytes = try JPEGEncoder.encode(
+                image, to: url, quality: edgeQuality, exif: spec.exif, icc: spec.icc
+            )
+            encodes += 1
+            // The extreme may itself land in band — a size can miss on the way
+            // down and still fit at the very bottom of the quality range.
+            if spec.bytes.contains(bytes) {
+                return Probe(
+                    outcome: .landed(quality: edgeQuality, bytes: bytes, url: url),
+                    reference: bytes
+                )
+            }
+            return Probe(
+                outcome: bytes > spec.bytes.upperBound
+                    ? .tooBig(atLowestQuality: bytes)
+                    : .tooSmall(atFullQuality: bytes),
+                reference: bytes
+            )
+        }
+
+        return Probe(
+            outcome: overCeiling
+                ? .tooBig(atLowestQuality: lastBytes)
+                : .tooSmall(atFullQuality: lastBytes),
+            reference: lastBytes
+        )
     }
 
     private func rename(_ url: URL, to name: String?, spec: UploadSpec) -> URL {
@@ -229,5 +360,30 @@ public actor FitEngine {
         } catch {
             return url
         }
+    }
+}
+
+/// The byte size a fit is trying to hit, and the window it will accept.
+struct Targets {
+    /// What to aim for.
+    let target: Int
+    /// The acceptable window, held clear of the band's edges.
+    let floor: Int
+    let ceiling: Int
+
+    init(spec: UploadSpec) {
+        let span = Double(spec.bytes.upperBound - spec.bytes.lowerBound)
+        let clearance = min(span * Config.bandEdgeClearance, span / 2)
+        floor = spec.bytes.lowerBound + Int(clearance)
+        ceiling = spec.bytes.upperBound - Int(clearance)
+
+        // A fraction of the band is only meaningful when the band is narrow.
+        // UK Passport allows 50 KB to 10 MB, and 60% into that is 6 MB — a
+        // passport photo, produced at six megabytes, technically in range and
+        // obviously wrong. So the fraction is capped by an absolute size that
+        // is generous for a photograph and absurd for nothing.
+        let proportional = Double(spec.bytes.lowerBound) + span * Config.bandTargetFraction
+        let capped = min(proportional, Double(Config.preferredBytes))
+        target = max(floor, min(ceiling, Int(capped)))
     }
 }

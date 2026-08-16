@@ -21,12 +21,22 @@ public enum SpecCatalog {
     /// a range needs two ends.
     public static let noStatedMaximum = 20_000
 
+    /// The presets the app offers.
+    ///
+    /// Schengen is deliberately absent. Its official page could not be read, so
+    /// it constrains nothing at all — and a spec that says yes to everything is
+    /// worse than no spec, because it accepts a 398 × 600 screenshot and tells
+    /// the user their photo is fine. It lives in `drafts` until someone reads
+    /// the requirements.
     public static var all: [UploadSpec] {
-        [usVisa, usDVLottery, usPassport, indiaEVisa, canadaPR, newZealand, ukPassport, schengen]
+        [usVisa, usDVLottery, usPassport, indiaEVisa, canadaPR, newZealand, ukPassport]
     }
 
+    /// Started, but not fit to offer. Never shown as a choice.
+    public static var drafts: [UploadSpec] { [schengen] }
+
     public static func spec(id: String) -> UploadSpec? {
-        all.first { $0.id == id }
+        (all + drafts).first { $0.id == id }
     }
 
     // MARK: - Verified

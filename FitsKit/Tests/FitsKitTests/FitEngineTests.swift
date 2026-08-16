@@ -135,6 +135,89 @@ struct FitEngineTests {
         await engine.discardOutputs()
     }
 
+    // MARK: - Regressions
+
+    /// IMG_1335: a 4284 × 5712 photo, already exactly 3:4, refused for New
+    /// Zealand with "at 530 × 707 ... under the 512 KB minimum".
+    ///
+    /// The spec states no pixel bounds, so the ladder's floor fell back to one
+    /// pixel and five geometric rungs spanned 4284 down to 1 — 4284, 530, 65,
+    /// 8, 1. The answer sat in the gap between the first two rungs, the second
+    /// undershot the byte floor, and there was no larger rung left to step to.
+    @Test func aLarge3To4SourceMeetsAByteFloorItPreviouslyRefused() async throws {
+        let url = try Self.writeJPEG(Self.noisyImage(width: 4284, height: 5712), quality: 0.92)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let engine = try FitEngine()
+        let fit = try await engine.fit(url: url, to: SpecCatalog.newZealand)
+
+        #expect(SpecCatalog.newZealand.bytes.contains(fit.byteCount))
+        #expect(fit.byteCount >= 512_000, "landed under New Zealand's floor")
+        #expect(SpecCatalog.newZealand.aspect.admits(width: fit.pixelWidth, height: fit.pixelHeight))
+        #expect(fit.verification.passed)
+        // The failure mode was a ladder that skipped the answer entirely.
+        #expect(fit.pixelWidth > 530, "still collapsing to the bottom of the ladder")
+        await engine.discardOutputs()
+    }
+
+    /// The ladder must not span orders of magnitude when a spec states no
+    /// pixel bounds. This is the shape of the bug, independent of encoding.
+    @Test func anOpenEndedSpecDoesNotProduceAWildLadder() throws {
+        let source = PixelSize(width: 4284, height: 5712)
+        let ladder = try DimensionLadder.build(croppedSource: source, spec: SpecCatalog.newZealand)
+
+        #expect(ladder.count >= 2)
+        let smallest = ladder.last!
+        #expect(smallest.width >= Int(Double(source.width) * 0.15),
+                "ladder reaches \(smallest.label), far below anything useful")
+        // No rung may be more than about 3x the pixels of the next one down.
+        for (a, b) in zip(ladder, ladder.dropFirst()) {
+            #expect(Double(a.pixels) / Double(b.pixels) < 4.0,
+                    "gap between \(a.label) and \(b.label) is too wide to bracket an answer")
+        }
+    }
+
+    /// A band of 50 KB – 10 MB is not an invitation to produce an 8 MB
+    /// passport photo. Sixty percent into that band is 6 MB.
+    @Test func aWideBandTargetsASensibleAbsoluteSizeNotAPercentage() async throws {
+        let url = try Self.writeJPEG(Self.noisyImage(width: 3000, height: 3600), quality: 0.95)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let engine = try FitEngine()
+        let fit = try await engine.fit(url: url, to: SpecCatalog.ukPassport)
+
+        #expect(SpecCatalog.ukPassport.bytes.contains(fit.byteCount))
+        #expect(fit.byteCount <= 3_000_000,
+                "produced \(ByteFormat.string(fit.byteCount)) for a passport photo")
+        #expect(fit.verification.passed)
+        await engine.discardOutputs()
+    }
+
+    /// A preset that rules nothing out would approve a screenshot.
+    @Test func everyOfferedPresetActuallyConstrainsSomething() {
+        for spec in SpecCatalog.all {
+            #expect(spec.constrainsSomething, "\(spec.id) rules nothing out")
+            #expect(spec.isOfferable, "\(spec.id) is not safe to put in front of a user")
+        }
+        // And the one that does not is kept out of the offered list.
+        #expect(SpecCatalog.drafts.contains { !$0.constrainsSomething })
+        #expect(!SpecCatalog.all.contains { $0.id == "schengen-france" })
+    }
+
+    /// The screenshot that Schengen waved through: small, wrong shape, tiny.
+    @Test func aScreenshotSizedSourceIsRefusedByEveryOfferedSquareSpec() async throws {
+        let url = try Self.writeJPEG(Self.noisyImage(width: 398, height: 600))
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let engine = try FitEngine()
+        for spec in SpecCatalog.all where spec.width != nil {
+            await #expect(throws: FitFailure.self, "\(spec.id) accepted a 398 × 600 screenshot") {
+                try await engine.fit(url: url, to: spec)
+            }
+        }
+        await engine.discardOutputs()
+    }
+
     // MARK: - Verification
 
     @Test func theRawJPEGParserAgreesWithImageIO() throws {

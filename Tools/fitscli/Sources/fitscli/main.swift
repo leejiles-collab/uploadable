@@ -133,7 +133,8 @@ func fit(_ urls: [URL], specID: String, outDirectory: URL) async throws {
                 + "  q\(String(format: "%.2f", result.quality))"
                 + "  \(result.encodeCount) encodes"
                 + "  \(String(format: "%.2fs", result.elapsed))"
-                + "  \(result.verification.passed ? "verified" : "VERIFICATION FAILED")")
+                + "  \(result.verification.passed ? "verified" : "VERIFICATION FAILED")"
+                + "\(result.hitEncodeCap ? "  ENCODE CAP HIT" : "")")
         } catch let failure as FitFailure {
             print("\(url.lastPathComponent)  ->  \(failure.message)")
         }
@@ -244,7 +245,8 @@ func report(_ urls: [URL], outDirectory: URL) async throws {
                     + "| \(spec.bytes.contains(fit.byteCount) ? "yes" : "NO") "
                     + "| \(String(format: "%.2f", fit.quality)) "
                     + "| \(fit.candidatesTried.joined(separator: ", ")) "
-                    + "| \(fit.encodeCount) | \(String(format: "%.2fs", fit.elapsed)) | \(checks) |")
+                    + "| \(fit.encodeCount)\(fit.hitEncodeCap ? " CAPPED" : "") "
+                    + "| \(String(format: "%.2fs", fit.elapsed)) | \(checks) |")
             } catch let failure as FitFailure {
                 print("| \(spec.name) | refused | — | — | — | — | — | — | — | \(failure.message) |")
             }

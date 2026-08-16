@@ -38,8 +38,37 @@ public enum Config {
     public static let bandTargetFraction = 0.6
     public static let bandEdgeClearance = 0.05
 
-    /// How many dimension candidates to build per fit.
+    /// How many dimension candidates the initial ladder suggests. The search
+    /// brackets and predicts from there, so this is a starting spread rather
+    /// than the set of sizes actually tried.
     public static let ladderSize = 5
+
+    /// Quality bisection steps per size.
+    public static let qualitySteps = 4
+
+    /// Where the quality search begins. A photograph destined for a government
+    /// portal wants to look like a photograph, so it starts high and comes down
+    /// only as far as the byte band forces it.
+    public static let startingQuality = 0.8
+
+    /// How much to shrink the image when a size lands in band but only at a
+    /// quality we would rather not ship. Fewer pixels carry the same byte
+    /// budget at higher quality; this is how that trade is made.
+    public static let qualityRecoveryStep = 0.8
+
+    /// How many distinct sizes one fit may try. Each costs a handful of
+    /// encodes, so this is what actually keeps a fit inside `maxEncodes`
+    /// rather than the encode count noticing too late.
+    public static let maxSizes = 4
+
+    /// What a photograph should weigh when the spec leaves room to choose.
+    ///
+    /// Byte bands vary enormously — DS-160 allows 240 KB, UK Passport allows
+    /// 10 MB — and aiming at a fraction of the ceiling produces a six-megabyte
+    /// passport photo, which is in range and plainly wrong. This caps the
+    /// proportional target: generous for a photograph, absurd for anything
+    /// that is merely "under the limit".
+    public static let preferredBytes = 1_500_000
 
     /// Re-verify presets older than this before submitting a release.
     public static let specStaleAfterDays = 90

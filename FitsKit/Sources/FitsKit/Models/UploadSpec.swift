@@ -36,6 +36,24 @@ public struct UploadSpec: Sendable, Identifiable, Hashable {
     /// that the user should still read. Kept short.
     public let caveats: [String]
 
+    /// Whether this spec actually rules anything out.
+    ///
+    /// A preset with no shape rule, no pixel bounds and a byte band wide enough
+    /// to admit any photograph is not a specification — it is a rubber stamp,
+    /// and one that will happily approve a screenshot. Nothing that fails this
+    /// belongs in front of a user.
+    public var constrainsSomething: Bool {
+        if aspect.value != nil { return true }
+        if width != nil || height != nil { return true }
+        return bytes.lowerBound > 0
+    }
+
+    /// Safe to offer as a choice: it constrains something, and if nobody has
+    /// confirmed its numbers it at least says why.
+    public var isOfferable: Bool {
+        constrainsSomething && (source.isVerified || source.note != nil)
+    }
+
     public init(
         id: String,
         name: String,

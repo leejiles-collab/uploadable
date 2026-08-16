@@ -92,6 +92,11 @@ public struct Fit: Sendable, Hashable {
     /// Every dimension candidate tried, largest first.
     public let candidatesTried: [String]
     public let encodeCount: Int
+    /// True when the search stopped because it ran out of encode budget rather
+    /// than because it was finished. The result is still verified and still
+    /// meets the spec — but a better one may have existed, so it is worth
+    /// knowing rather than silently accepting.
+    public let hitEncodeCap: Bool
     public let elapsed: TimeInterval
     public let transformations: [Transformation]
     public let verification: Verification
@@ -99,7 +104,8 @@ public struct Fit: Sendable, Hashable {
     public init(
         url: URL, spec: UploadSpec, source: SourceFacts,
         pixelWidth: Int, pixelHeight: Int, byteCount: Int, quality: Double,
-        candidatesTried: [String], encodeCount: Int, elapsed: TimeInterval,
+        candidatesTried: [String], encodeCount: Int, hitEncodeCap: Bool,
+        elapsed: TimeInterval,
         transformations: [Transformation], verification: Verification
     ) {
         self.url = url
@@ -111,6 +117,7 @@ public struct Fit: Sendable, Hashable {
         self.quality = quality
         self.candidatesTried = candidatesTried
         self.encodeCount = encodeCount
+        self.hitEncodeCap = hitEncodeCap
         self.elapsed = elapsed
         self.transformations = transformations
         self.verification = verification

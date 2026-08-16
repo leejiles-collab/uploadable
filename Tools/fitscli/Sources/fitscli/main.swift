@@ -81,7 +81,11 @@ func describe(_ spec: UploadSpec) -> String {
     } else {
         dims = "not stated"
     }
-    return "\(spec.aspect.label) · \(dims) · \(ByteFormat.band(spec.bytes))"
+    let formats = spec.accepted
+        .compactMap { $0.preferredFilenameExtension?.uppercased() }
+        .sorted()
+        .joined(separator: "/")
+    return "\(spec.aspect.label) · \(dims) · \(ByteFormat.band(spec.bytes)) · \(formats)"
 }
 
 // MARK: - inspect
@@ -145,26 +149,51 @@ func fit(_ urls: [URL], specID: String, outDirectory: URL) async throws {
 // MARK: - specs --check
 
 func checkSpecs() {
-    let sorted = SpecCatalog.all.sorted {
-        ($0.source.verifiedOn ?? .distantPast) < ($1.source.verifiedOn ?? .distantPast)
-    }
-    var unverified = 0
-    var stale = 0
-    for spec in sorted {
-        if !spec.source.isVerified { unverified += 1 }
-        if let age = spec.source.age(), age > Config.specStaleAfterDays { stale += 1 }
+    func show(_ spec: UploadSpec) {
         print("\(spec.id)")
         print("  name          \(spec.name)  (\(spec.issuer))")
         print("  requirements  \(describe(spec))")
+        print("  emits         \(spec.output.preferredFilenameExtension?.uppercased() ?? "?")"
+            + " (\(spec.mandatesOutputFormat ? "the only format accepted" : "one of several accepted"))")
         print("  verified      \(verifiedLabel(spec))")
-        print("  source        \(spec.source.url.absoluteString)")
+        print("  source        \(spec.source.url.absoluteString)\(spec.source.urlIsDead ? "   [DEAD LINK]" : "")")
         if let note = spec.source.note { print("  note          \(note)") }
         for caveat in spec.caveats { print("  caveat        \(caveat)") }
         print()
     }
-    print("\(SpecCatalog.all.count) presets · \(unverified) unverified · \(stale) older than \(Config.specStaleAfterDays) days")
-    if unverified > 0 || stale > 0 {
-        print("re-read the official pages for anything listed above before submitting a release")
+
+    let offered = SpecCatalog.all.sorted {
+        ($0.source.verifiedOn ?? .distantPast) < ($1.source.verifiedOn ?? .distantPast)
+    }
+    print("OFFERED — shown to the user")
+    print()
+    for spec in offered { show(spec) }
+
+    print("DRAFTS — never offered, not in the report")
+    print()
+    for spec in SpecCatalog.drafts { show(spec) }
+
+    let unverifiedOffered = SpecCatalog.all.filter { !$0.source.isVerified }
+    let stale = SpecCatalog.all.filter { ($0.source.age() ?? 0) > Config.specStaleAfterDays }
+    let toothless = SpecCatalog.all.filter { !$0.constrainsSomething }
+
+    print("\(SpecCatalog.all.count) offered · \(SpecCatalog.drafts.count) drafts"
+        + " · \(unverifiedOffered.count) offered but unverified"
+        + " · \(stale.count) older than \(Config.specStaleAfterDays) days")
+
+    if !unverifiedOffered.isEmpty {
+        print("PROBLEM: unverified presets are being offered: "
+            + unverifiedOffered.map(\.id).joined(separator: ", "))
+    }
+    if !toothless.isEmpty {
+        print("PROBLEM: offered presets that rule nothing out: "
+            + toothless.map(\.id).joined(separator: ", "))
+    }
+    if !stale.isEmpty {
+        print("re-read the official pages for: " + stale.map(\.id).joined(separator: ", "))
+    }
+    if unverifiedOffered.isEmpty && toothless.isEmpty && stale.isEmpty {
+        print("every offered preset was read off its official page and is current")
     }
 }
 

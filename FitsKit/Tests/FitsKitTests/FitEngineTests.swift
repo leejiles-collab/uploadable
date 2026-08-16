@@ -276,6 +276,51 @@ struct FitEngineTests {
         }
     }
 
+    /// Nothing unverified may reach a user. This is the invariant behind the
+    /// whole provenance apparatus, so it is asserted rather than assumed.
+    @Test func nothingOfferedIsUnverified() {
+        for spec in SpecCatalog.all {
+            #expect(spec.source.isVerified, "\(spec.id) is offered without a verification date")
+            #expect(!spec.source.urlIsDead, "\(spec.id) is offered with a dead source link")
+        }
+        #expect(SpecCatalog.all.count == 6)
+        #expect(SpecCatalog.drafts.count == 2)
+        for draft in SpecCatalog.drafts {
+            #expect(!SpecCatalog.all.contains { $0.id == draft.id })
+            #expect(draft.source.note != nil, "\(draft.id) is a draft with no reason given")
+        }
+    }
+
+    /// A spec may accept several formats. Claiming JPEG is required where the
+    /// source does not say so is putting words in a government's mouth.
+    @Test func specsDistinguishAcceptedFormatsFromWhatWeEmit() {
+        #expect(SpecCatalog.usPassport.accepted.count > 1)
+        #expect(!SpecCatalog.usPassport.mandatesOutputFormat)
+        #expect(SpecCatalog.usVisa.mandatesOutputFormat)
+        for spec in SpecCatalog.all {
+            #expect(spec.accepted.contains(spec.output),
+                    "\(spec.id) emits a format it does not list as accepted")
+        }
+    }
+
+    /// US Passport now states no pixel bounds and no shape — the same
+    /// open-ended shape that made New Zealand refuse a perfectly good photo.
+    @Test func anOpenEndedPassportSpecStillProducesSensibleOutput() async throws {
+        let url = try Self.writeJPEG(Self.noisyImage(width: 4032, height: 3024), quality: 0.95)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let engine = try FitEngine()
+        let fit = try await engine.fit(url: url, to: SpecCatalog.usPassport)
+
+        #expect(SpecCatalog.usPassport.bytes.contains(fit.byteCount))
+        #expect(fit.byteCount >= 54_000)
+        #expect(fit.byteCount <= 3_000_000, "a passport photo should not be huge")
+        #expect(fit.pixelWidth >= 600, "collapsed to \(fit.pixelWidth) px wide")
+        #expect(fit.verification.passed)
+        #expect(!fit.hitEncodeCap)
+        await engine.discardOutputs()
+    }
+
     @Test func verifiedPresetsCarryARealDate() {
         let verified = SpecCatalog.all.filter(\.source.isVerified)
         #expect(verified.count >= 5)

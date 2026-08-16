@@ -26,7 +26,24 @@ public struct UploadSpec: Sendable, Identifiable, Hashable {
     /// A band, not a ceiling. Half of these specs have a floor as well, and a
     /// file under it is rejected exactly as firmly as one over the top.
     public let bytes: ClosedRange<Int>
-    public let format: UTType
+
+    /// The formats the portal says it accepts.
+    ///
+    /// A set, not a single value, because it is not always one. The US
+    /// Passport upload page accepts JPG, JPEG, PNG, HEIC and HEIF; saying
+    /// "JPEG required" there would be putting words in the State Department's
+    /// mouth. What Fits *writes* is `output`, and the two are different
+    /// questions.
+    public let accepted: Set<UTType>
+
+    /// What Fits emits. JPEG everywhere, for now.
+    ///
+    /// It is accepted by every spec verified so far, and it is the only path
+    /// whose output is verified end to end — the profile, the metadata and the
+    /// byte count are all checked on a JPEG. Emitting a format we do not verify
+    /// would be worse than emitting one that is merely allowed rather than
+    /// demanded.
+    public let output: UTType
     public let color: ColorPolicy
     public let exif: EXIFPolicy
     public let icc: ICCPolicy
@@ -48,6 +65,11 @@ public struct UploadSpec: Sendable, Identifiable, Hashable {
         return bytes.lowerBound > 0
     }
 
+    /// Whether the portal insists on the format we emit, or merely allows it.
+    /// Worth saying out loud in the UI: "JPEG" reads as a requirement, and for
+    /// several specs it is only a choice.
+    public var mandatesOutputFormat: Bool { accepted == [output] }
+
     /// Safe to offer as a choice: it constrains something, and if nobody has
     /// confirmed its numbers it at least says why.
     public var isOfferable: Bool {
@@ -62,7 +84,8 @@ public struct UploadSpec: Sendable, Identifiable, Hashable {
         width: ClosedRange<Int>?,
         height: ClosedRange<Int>?,
         bytes: ClosedRange<Int>,
-        format: UTType = .jpeg,
+        accepted: Set<UTType> = [.jpeg],
+        output: UTType = .jpeg,
         color: ColorPolicy = .sRGB,
         exif: EXIFPolicy = .stripAll,
         icc: ICCPolicy = .embedSRGB,
@@ -76,7 +99,8 @@ public struct UploadSpec: Sendable, Identifiable, Hashable {
         self.width = width
         self.height = height
         self.bytes = bytes
-        self.format = format
+        self.accepted = accepted
+        self.output = output
         self.color = color
         self.exif = exif
         self.icc = icc
@@ -163,11 +187,15 @@ public struct SpecSource: Sendable, Hashable {
     public let verifiedOn: Date?
     /// Why it is unverified, when it is.
     public let note: String?
+    /// The page has gone. Kept so the catalog does not hand anyone a link that
+    /// 404s, and so it is obvious the numbers have no live source at all.
+    public let urlIsDead: Bool
 
-    public init(url: URL, verifiedOn: Date?, note: String? = nil) {
+    public init(url: URL, verifiedOn: Date?, note: String? = nil, urlIsDead: Bool = false) {
         self.url = url
         self.verifiedOn = verifiedOn
         self.note = note
+        self.urlIsDead = urlIsDead
     }
 
     public var isVerified: Bool { verifiedOn != nil }

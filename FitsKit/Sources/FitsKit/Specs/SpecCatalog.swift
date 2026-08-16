@@ -21,19 +21,20 @@ public enum SpecCatalog {
     /// a range needs two ends.
     public static let noStatedMaximum = 20_000
 
-    /// The presets the app offers.
-    ///
-    /// Schengen is deliberately absent. Its official page could not be read, so
-    /// it constrains nothing at all — and a spec that says yes to everything is
-    /// worse than no spec, because it accepts a 398 × 600 screenshot and tells
-    /// the user their photo is fine. It lives in `drafts` until someone reads
-    /// the requirements.
+    /// The presets the app offers. Every one of these has been read off its
+    /// official page by a person.
     public static var all: [UploadSpec] {
-        [usVisa, usDVLottery, usPassport, indiaEVisa, canadaPR, newZealand, ukPassport]
+        [usVisa, usPassport, indiaEVisa, canadaPR, newZealand, ukPassport]
     }
 
-    /// Started, but not fit to offer. Never shown as a choice.
-    public static var drafts: [UploadSpec] { [schengen] }
+    /// Started, but not fit to offer, and never shown as a choice.
+    ///
+    /// The DV Lottery has no published instructions outside its registration
+    /// window and every secondary source disagrees with the others. Schengen's
+    /// official page has been taken down. Guessing at either would be guessing
+    /// at a one-shot immigration application, which is the worst place to be
+    /// approximately right.
+    public static var drafts: [UploadSpec] { [usDVLottery, schengen] }
 
     public static func spec(id: String) -> UploadSpec? {
         (all + drafts).first { $0.id == id }
@@ -147,7 +148,7 @@ public enum SpecCatalog {
 
     // MARK: - Unverified
 
-    /// Could not be read: dvprogram.state.gov refuses automated requests.
+    /// DRAFT. Cannot be verified outside the registration window.
     public static let usDVLottery = UploadSpec(
         id: "us-dv-lottery",
         name: "US Diversity Visa (DV Lottery)",
@@ -159,32 +160,50 @@ public enum SpecCatalog {
         source: SpecSource(
             url: URL(string: "https://dvprogram.state.gov/")!,
             verifiedOn: nil,
-            note: "dvprogram.state.gov returned 403 to an automated request. The "
-                + "numbers here mirror the verified DS-160 digital image "
-                + "requirements, which the DV programme has historically shared, "
-                + "but that was not confirmed against the DV page itself."
+            note: "Checked 15 August 2026: dvprogram.state.gov shows no open "
+                + "entry period and still displays DV-2026, which closed in "
+                + "November 2024. The photo instructions publish only when "
+                + "registration opens, around early October. Secondary sources "
+                + "disagree over whether the requirement is exactly 600 × 600 "
+                + "or a 600–1200 range, and this is a one-entry-per-year "
+                + "application with no appeal, so nothing is offered until the "
+                + "DV-YYYY Program Instructions PDF can be read."
         )
     )
 
-    /// Could not be read: travel.state.gov refuses automated requests.
+    /// Read 15 August 2026 from the online-renewal upload page, which carries
+    /// its own "Last Updated: May 04, 2026".
+    ///
+    /// States a byte band and a list of accepted formats, and nothing else. No
+    /// pixel dimensions and no aspect ratio, because the applicant crops inside
+    /// State's own tool after uploading.
+    ///
+    /// This preset previously claimed square and 600–1200. Both were carried
+    /// over from DS-160 by assumption and appear nowhere in the source. The
+    /// page that *was* linked covers printed photos — two inches square, head
+    /// 25–35 mm — and has no digital file requirements on it at all.
     public static let usPassport = UploadSpec(
         id: "us-passport",
         name: "US Passport",
         issuer: "US Department of State",
-        aspect: .square,
-        width: 600...1200,
-        height: 600...1200,
+        aspect: .free,
+        width: nil,
+        height: nil,
         bytes: 54_000...10_000_000,
+        accepted: [.jpeg, .png, .heic, .heif],
         source: SpecSource(
-            url: URL(string: "https://travel.state.gov/content/travel/en/passports/how-apply/photos.html")!,
-            verifiedOn: nil,
-            note: "travel.state.gov returned 403 to every automated request, "
-                + "including via its adoption.state.gov mirror, which redirects "
-                + "back. Numbers are unconfirmed."
-        )
+            url: URL(string: "https://travel.state.gov/en/passports/renew-replace/online/upload-digital-photo.html")!,
+            verifiedOn: day(2026, 8, 15)
+        ),
+        caveats: [
+            "The page states no pixel dimensions and no aspect ratio — you crop "
+            + "the photo inside the State Department's own tool after uploading.",
+            "JPG, JPEG, PNG, HEIC and HEIF are all accepted. Fits writes JPEG, "
+            + "which is on the list."
+        ]
     )
 
-    /// Could not be read: france-visas.gouv.fr refuses automated requests.
+    /// DRAFT. The official page has been removed.
     public static let schengen = UploadSpec(
         id: "schengen-france",
         name: "Schengen Visa (France)",
@@ -196,9 +215,11 @@ public enum SpecCatalog {
         source: SpecSource(
             url: URL(string: "https://france-visas.gouv.fr/en/web/france-visas/photo")!,
             verifiedOn: nil,
-            note: "france-visas.gouv.fr returned 403 to an automated request. No "
-                + "digital file requirements could be confirmed, so this preset "
-                + "constrains almost nothing and should not be trusted."
+            note: "Checked 15 August 2026: the page returns 404 — it has been "
+                + "taken down, not merely blocked. No digital file requirements "
+                + "could be confirmed anywhere, so this preset constrains almost "
+                + "nothing and must not be offered.",
+            urlIsDead: true
         )
     )
 

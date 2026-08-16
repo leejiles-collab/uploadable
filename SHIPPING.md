@@ -39,10 +39,46 @@ portal's rejection into our fault.
 **2. Do not ship an unverified preset without saying so in the UI.** A preset
 with `verifiedOn: nil` must render as unverified wherever it appears.
 
-**3. App Store copy may not claim** that any specific portal rejects Display P3,
+**3. The DV Lottery preset is seasonal.** It is the one spec with a hard annual
+spike. Registration opens around early October and runs about five weeks, and
+the DV-YYYY Program Instructions PDF — the only official statement of the photo
+requirements — publishes only when it opens. Outside that window
+dvprogram.state.gov shows the previous year's closed programme and nothing
+usable. When the PDF appears: read it, set a real `verifiedOn`, and move
+`usDVLottery` from `drafts` into `all`. Until then it stays out of the app.
+Secondary sources disagree over whether the requirement is exactly 600 × 600 or
+a 600–1200 range, and a one-entry-per-year application with no appeals process
+is the worst possible place to be approximately right.
+
+**4. App Store copy may not claim** that any specific portal rejects Display P3,
 or cite rejection rates, until that has been tested against the real form. It
 may say that Fits converts to sRGB, removes location data, and lands the file
 inside the required range — all three are verifiable from the output.
+
+---
+
+## How we are allowed to describe what Fits does
+
+The State Department pages say *"Do not use any kind of filter or retouching
+tools to change your appearance"* and *"We check all photos to ensure you are
+not using artificial intelligence tools."*
+
+Fits does not alter anyone's appearance. It re-encodes a file, changes its pixel
+dimensions and converts its colour space — it does not touch faces, skin,
+lighting or background. But the line between re-encoding a file and editing a
+photo is not one a reviewer is obliged to draw where we would, and a listing
+that reads as photo editing invites exactly the wrong reading.
+
+So, in App Store copy, screenshots, the in-app UI and support pages:
+
+- **Say:** converts the format, resizes to the required dimensions, brings the
+  file inside the required size range, converts to sRGB, removes location data.
+- **Never say:** edit, enhance, retouch, improve, fix, beautify, optimise your
+  photo, AI, smart, automatic enhancement, or anything implying the photograph
+  itself has been changed.
+
+The distinction to hold on to: Fits changes the *file*, never the *picture*.
+That is also the honest description, which is why it is easy to keep to.
 
 ---
 

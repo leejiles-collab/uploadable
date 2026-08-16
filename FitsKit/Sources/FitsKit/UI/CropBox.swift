@@ -1,5 +1,4 @@
 import SwiftUI
-import FitsKit
 
 /// The photo with the crop rectangle over it: drag to move, pinch to resize.
 ///
@@ -13,7 +12,7 @@ import FitsKit
 /// head-and-shoulders frame that clips the top of the head. The file is correct
 /// in every measurable way and it is the wrong part of the photograph, and no
 /// measurement can catch that. See NOTES.md.
-struct CropBox: View {
+public struct CropBox: View {
     let image: CGImage
     let imageSize: PixelSize
     let aspect: AspectRule
@@ -22,7 +21,14 @@ struct CropBox: View {
     @State private var dragStart: CropRect?
     @State private var pinchStart: CropRect?
 
-    var body: some View {
+    public init(image: CGImage, imageSize: PixelSize, aspect: AspectRule, crop: Binding<CropRect>) {
+        self.image = image
+        self.imageSize = imageSize
+        self.aspect = aspect
+        self._crop = crop
+    }
+
+    public var body: some View {
         GeometryReader { geometry in
             let frame = fittedRect(in: geometry.size)
             ZStack(alignment: .topLeading) {

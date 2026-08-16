@@ -8,9 +8,14 @@ import FitsKit
 /// make it acceptable, so the payoff is the requirement and a tick beside it.
 struct DoneView: View {
     let fit: Fit
+    /// Whether this file may leave. Recomputed when the entitlement changes, so
+    /// buying Pro on the paywall unlocks the buttons behind it without a
+    /// round trip through another screen.
+    let mayExport: Bool
+    let onExported: () -> Void
+    let onBlocked: () -> Void
     let onStartOver: () -> Void
 
-    @State private var isExporting = false
     @State private var saveMessage: String?
 
     var body: some View {
@@ -49,14 +54,6 @@ struct DoneView: View {
             ToolbarItem(placement: .topBarLeading) {
                 Button("Done", action: onStartOver)
             }
-        }
-        .fileExporter(
-            isPresented: $isExporting,
-            document: ExportedImage(url: fit.url),
-            contentType: .jpeg,
-            defaultFilename: fit.url.deletingPathExtension().lastPathComponent
-        ) { result in
-            if case .success = result { saveMessage = "Saved to Files." }
         }
     }
 
@@ -123,7 +120,7 @@ struct DoneView: View {
     private var actions: some View {
         VStack(spacing: Metrics.cardSpacing) {
             Button {
-                saveToPhotos()
+                guarded { saveToPhotos() }
             } label: {
                 Text("Save to Photos")
                     .font(.headline)
@@ -134,7 +131,7 @@ struct DoneView: View {
             .controlSize(.large)
 
             Button {
-                isExporting = true
+                guarded { saveToFiles() }
             } label: {
                 Text("Save to Files")
                     .font(.headline)
@@ -144,14 +141,53 @@ struct DoneView: View {
             .buttonStyle(.bordered)
             .controlSize(.large)
 
-            ShareLink(item: fit.url) {
-                Text("Share")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+            // ShareLink cannot be intercepted, so when an export is blocked the
+            // button is a plain one that opens the paywall instead. Same words,
+            // same place; only the destination differs.
+            if mayExport {
+                ShareLink(item: fit.url) {
+                    Text("Share")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .simultaneousGesture(TapGesture().onEnded { onExported() })
+            } else {
+                Button(action: onBlocked) {
+                    Text("Share")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
+        }
+    }
+
+    /// Every export goes through here. Blocked ones open the paywall rather
+    /// than failing quietly, and nothing is counted until it has landed.
+    private func guarded(_ action: () -> Void) {
+        guard mayExport else {
+            onBlocked()
+            return
+        }
+        action()
+    }
+
+    /// Straight into the app's own Documents, which the Files app shows as
+    /// On My iPhone → Fits. No picker: the answer to "where did it go" should
+    /// be the same every time, and the share sheet covers anywhere else.
+    private func saveToFiles() {
+        do {
+            // The engine already named it "<original>-<spec>.jpg".
+            _ = try FilesLibrary.save(fit.url, as: fit.url.lastPathComponent)
+            saveMessage = "Saved to \(FilesLibrary.userFacingLocation)."
+            onExported()
+        } catch {
+            saveMessage = "Couldn't save to Files. \(error.localizedDescription)"
         }
     }
 
@@ -169,6 +205,7 @@ struct DoneView: View {
                         .addResource(with: .photo, fileURL: url, options: nil)
                 }
                 saveMessage = "Saved to Photos."
+                onExported()
             } catch {
                 saveMessage = "Couldn't save to Photos. \(error.localizedDescription)"
             }

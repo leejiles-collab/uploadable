@@ -45,6 +45,13 @@ final class FitsStore {
     var customMinKB = "0"
     var customMaxKB = "240"
 
+    /// Fits are free and unlimited; getting the file out is what is metered.
+    let purchases = PurchaseStore()
+    let exports = ExportStore()
+    private(set) var exportsRemaining = Config.freeExports
+    /// Shown only when an export is actually blocked.
+    var isShowingPaywall = false
+
     private var engine: FitEngine?
     private var task: Task<Void, Never>?
     private let inbox: URL
@@ -54,6 +61,40 @@ final class FitsStore {
             .appendingPathComponent("fits-inbox", isDirectory: true)
         try? FileManager.default.createDirectory(at: inbox, withIntermediateDirectories: true)
     }
+
+    // MARK: - Launch
+
+    /// Files whatever the share extension saved while the app was not running.
+    /// The extension cannot reach the Files folder from its own sandbox, so
+    /// this is the moment its work becomes visible.
+    func adoptExtensionOutput() {
+        FilesLibrary.adoptStaged()
+    }
+
+    func refreshEntitlements() async {
+        await purchases.start()
+        exportsRemaining = await exports.remaining
+    }
+
+    // MARK: - Exporting
+
+    /// Whether this file may leave, without changing anything.
+    ///
+    /// The same bytes exported a second time are free: saving one result to
+    /// Photos and then to Files and then sharing it is one export, not three.
+    func mayExport(_ fit: Fit) async -> Bool {
+        await exports.isAllowed(fit.url, isPro: purchases.isPro)
+    }
+
+    /// Called after an export lands, never before — a save that fails should
+    /// cost nothing.
+    func recordExport(_ fit: Fit) async {
+        await exports.record(fit.url)
+        exportsRemaining = await exports.remaining
+    }
+
+    func showPaywall() { isShowingPaywall = true }
+    func dismissPaywall() { isShowingPaywall = false }
 
     // MARK: - Getting a photo in
 

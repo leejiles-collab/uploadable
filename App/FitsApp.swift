@@ -13,12 +13,30 @@ struct FitsApp: App {
 /// One screen at a time, chosen by what the engine is doing.
 struct RootView: View {
     @State private var store = FitsStore()
+    /// Recomputed whenever the allowance or the entitlement changes, so buying
+    /// Pro unlocks the buttons behind the paywall without another round trip.
+    @State private var canExport = true
 
     var body: some View {
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .animation(.easeInOut(duration: 0.2), value: phaseID)
+        }
+        .task {
+            // Before anything else: file whatever the share extension saved
+            // while the app was not running. It cannot reach the Files folder
+            // from its own sandbox, so this is the moment its work shows up.
+            store.adoptExtensionOutput()
+            await store.refreshEntitlements()
+        }
+        .sheet(isPresented: Binding(
+            get: { store.isShowingPaywall },
+            set: { if !$0 { store.dismissPaywall() } }
+        )) {
+            NavigationStack {
+                PaywallView(purchases: store.purchases) { store.dismissPaywall() }
+            }
         }
     }
 
@@ -54,7 +72,15 @@ struct RootView: View {
             )
 
         case .done(let fit):
-            DoneView(fit: fit, onStartOver: { store.startOver() })
+            DoneView(
+                fit: fit,
+                mayExport: canExport,
+                onExported: { Task { await store.recordExport(fit) } },
+                onBlocked: { store.showPaywall() },
+                onStartOver: { store.startOver() }
+            )
+            .task(id: store.exportsRemaining) { canExport = await store.mayExport(fit) }
+            .task(id: store.purchases.isPro) { canExport = await store.mayExport(fit) }
 
         case .failed(let failure, let spec):
             FailureView(

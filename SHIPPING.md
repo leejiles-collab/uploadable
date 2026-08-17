@@ -240,9 +240,9 @@ is where to find them.
 | Age rating | 4+ — every question answered No |
 | Price | **Free**. The $9.99 is the IAP, not the download |
 | Copyright | `2026 Lee Jiles` |
-| Privacy Policy URL | `https://<user>.github.io/uploadable/privacy.html` |
-| Support URL | `https://<user>.github.io/uploadable/support.html` |
-| Marketing URL | `https://<user>.github.io/uploadable/` (optional) |
+| Privacy Policy URL | `https://leejiles-collab.github.io/uploadable/privacy.html` |
+| Support URL | `https://leejiles-collab.github.io/uploadable/support.html` |
+| Marketing URL | `https://leejiles-collab.github.io/uploadable/` (optional) |
 | Support email | `leejiles@gmail.com` |
 | Sign-in required | **Unchecked** |
 
@@ -375,19 +375,44 @@ Traps this pipeline already handles, all of which cost time:
 
 ## Publishing the support and privacy pages
 
-`docs/` holds `index.html`, `privacy.html`, `support.html` and `style.css`,
-ready to serve. To publish:
+**Done.** `https://github.com/leejiles-collab/uploadable`, public, Pages
+serving `main` / `/docs`. All three pages verified live over anonymous HTTPS:
 
-1. Create a **public** GitHub repository. Pages on a private repository needs a
-   paid plan, and Apple has to be able to reach both URLs anonymously.
-2. `git remote add origin …` and push `main`.
-3. **Settings → Pages → Source: Deploy from a branch → `main` / `/docs` → Save.**
-4. Wait for the first deploy, then open both URLs in a private window. Apple
-   checks that they load and that the support page has a contact route.
-5. Put those URLs into the App Information and Version fields.
+| | |
+|---|---|
+| Privacy Policy URL | `https://leejiles-collab.github.io/uploadable/privacy.html` |
+| Support URL | `https://leejiles-collab.github.io/uploadable/support.html` |
+| Marketing URL | `https://leejiles-collab.github.io/uploadable/` |
+
+Set up the same way for a future app, entirely from the command line:
+
+```
+gh repo create <owner>/<repo> --public --source=. --remote=origin --description "…"
+git push -u origin main
+gh api -X POST repos/<owner>/<repo>/pages -f "source[branch]=main" -f "source[path]=/docs"
+```
+
+The `repo` scope on an existing `gh auth login` covers all three; no separate
+token is needed. Pages on a **private** repository requires a paid plan, and
+Apple has to reach both URLs anonymously, so public is the cheap answer.
+
+Then verify rather than assume — the first Pages build takes a minute and a
+missing `style.css` still returns a page, just an unstyled one:
+
+```
+curl -s -o /dev/null -w "%{http_code}\n" https://<owner>.github.io/<repo>/privacy.html
+```
+
+Before pushing, check what is about to become public:
+`git grep -nIE "AuthKey|PRIVATE KEY|api[_-]?key|secret|token"` over tracked
+files, and confirm `.p8` keys, entitlements and `Fixtures/` are ignored. Note
+that `SHIPPING.md` itself publishes the Team ID and the app's Apple ID —
+neither is a secret (the Team ID is in every signed app, the Apple ID is in the
+store URL), but know that it is happening rather than discover it.
 
 Both pages carry the support email and a "Last updated" date. Update the date
-whenever the behaviour they describe changes.
+whenever the behaviour they describe changes, and push — Pages redeploys on
+its own.
 
 ---
 

@@ -74,9 +74,10 @@ build is never broken, and each has a one-command swap:
   commercial use, no attribution required, not AI-generated. Licence and source
   URL are in `SHIPPING.md`; the file itself is not in the repository because
   `Fixtures/` is ignored, which is why the Pexels ID is written down.
-- **The GitHub repository.** `docs/` is written and ready; there is no remote
-  yet. Pages needs a **public** repo unless the account is on a paid plan, and
-  Apple must be able to reach both URLs anonymously.
+- ~~**The GitHub repository.**~~ **Done.**
+  `github.com/leejiles-collab/uploadable`, public, Pages on `main` / `/docs`.
+  All three pages verified live over anonymous HTTPS. URLs are in
+  `SHIPPING.md`.
 
 ### The captions must never state a number
 

@@ -70,10 +70,10 @@ build is never broken, and each has a one-command swap:
 - **The icon.** Direction A (corner marks) in indigo is in
   `Assets.xcassets`. Four directions × three colourways were rendered at true
   home-screen size for the choice. `./Tools/set-icon.sh <1024.png>` swaps it.
-- **The screenshot photograph.** `Fixtures/screenshot-source.jpg` is a synthetic
-  placeholder. Licensed stock with a model release goes in the same path and
-  `./Tools/screenshots.sh` regenerates all ten files, numbers included. Required
-  properties are in `SHIPPING.md` under *What the source photo has to be*.
+- ~~**The screenshot photograph.**~~ **Done.** Pexels 19601394, free for
+  commercial use, no attribution required, not AI-generated. Licence and source
+  URL are in `SHIPPING.md`; the file itself is not in the repository because
+  `Fixtures/` is ignored, which is why the Pexels ID is written down.
 - **The GitHub repository.** `docs/` is written and ready; there is no remote
   yet. Pages needs a **public** repo unless the account is on a paid plan, and
   Apple must be able to reach both URLs anonymously.
@@ -101,3 +101,29 @@ regenerated whenever the photo or the numbers change, and a pipeline that
 requires editing source first is a pipeline nobody runs. It cannot exist in a
 shipping binary — a launch argument that rewrites app state has no business
 there — so it is compiled out of Release entirely.
+
+### The centre crop clips the crown, and it did
+
+The first run on the real photograph centre-cropped and cut the top of the head
+off — a correct file of the wrong part of the picture, which is the failure this
+whole product exists to remove, demonstrated on our own store page. Two places
+now place the crop at the top of the frame instead:
+
+- `App/ScreenshotHarness.swift`, after `select`, which leaves it centred.
+- `uploadablecli --crop-y <0..1>`, new, threaded through `fit`, `report` and
+  `pair`. 0 is against the top, 0.5 centred, 1 against the bottom — the same
+  range of placements the app's handles allow before resizing.
+
+The synthetic stand-in never showed this, because a synthetic face has no crown
+to clip. Framing bugs need a real face to be visible at all, which is the second
+reason the pair needed one.
+
+### The matched pair is real now
+
+`Fixtures/out/pexels-kooldark-19601394-us-visa-ds160-{srgb,displayp3}.jpg`.
+Identical pixels and dimensions at 1200 × 1200, both inside the DS-160 band,
+differing only in the colour tag. The synthetic pair is deleted.
+
+Until one of these is actually uploaded to a portal, `SHIPPING.md` still forbids
+the store copy from claiming that any portal rejects Display P3. Generating the
+pair was never the point — uploading it is.

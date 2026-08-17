@@ -25,6 +25,14 @@ uploadablecli — UploadableKit test harness
       The same photo twice — identical pixels and size, one tagged sRGB and
       one tagged Display P3 — so a portal can settle the question by upload.
 
+  --crop-y <0..1>
+      Where to put the aspect-locked crop vertically: 0 is against the top of
+      the photo, 0.5 centred (the default and what the engine falls back to),
+      1 against the bottom. This is the one thing the engine will not decide
+      for you, and on a portrait the centre is frequently wrong — a square
+      crop centred on a head-and-shoulders photo clips the crown. Works with
+      fit, report and pair.
+
   uploadablecli specs --check
       Every preset with its numbers, source URL and verification date,
       oldest first.
@@ -49,12 +57,27 @@ func imagePaths() -> [URL] {
     for argument in arguments.dropFirst() {
         if skipNext { skipNext = false; continue }
         if argument.hasPrefix("--") {
-            skipNext = ["--spec", "--out"].contains(argument)
+            skipNext = ["--spec", "--out", "--crop-y"].contains(argument)
             continue
         }
         out.append(URL(fileURLWithPath: argument))
     }
     return out
+}
+
+/// The crop to hand the engine, from `--crop-y`.
+///
+/// Returns nil when the flag is absent, which leaves the engine on its centred
+/// fallback. The rect is aspect-locked and full-bleed on the other axis, so
+/// this is exactly the range of placements the app's crop handles allow when
+/// the user has not resized — one number, and it cannot be malformed.
+func placedCrop(aspect: Double?, source: URL) -> CropRect? {
+    guard let raw = value(for: "--crop-y"), let fraction = Double(raw) else { return nil }
+    guard let aspect, let size = OutputVerifier.imageIODimensions(source) else { return nil }
+    let centred = CropRect.centred(aspect: aspect, in: size)
+    let slack = 1 - centred.height
+    let y = min(max(fraction, 0), 1) * slack
+    return CropRect(x: centred.x, y: y, width: centred.width, height: centred.height)
 }
 
 let dateFormatter: DateFormatter = {
@@ -119,7 +142,10 @@ func fit(_ urls: [URL], specID: String, outDirectory: URL) async throws {
     for url in urls {
         let stem = url.deletingPathExtension().lastPathComponent
         do {
-            let result = try await engine.fit(url: url, to: spec, outputName: "\(stem)-\(spec.id)")
+            let result = try await engine.fit(
+                url: url, to: spec, crop: placedCrop(aspect: spec.aspect.value, source: url),
+                outputName: "\(stem)-\(spec.id)"
+            )
             let destination = outDirectory.appendingPathComponent(result.url.lastPathComponent)
             try? FileManager.default.removeItem(at: destination)
             try FileManager.default.copyItem(at: result.url, to: destination)
@@ -255,7 +281,10 @@ func report(_ urls: [URL], outDirectory: URL) async throws {
         print("|---|---|---|---|---|---|---|---|---|---|")
         for spec in SpecCatalog.all {
             do {
-                let fit = try await engine.fit(url: url, to: spec, outputName: "\(stem)-\(spec.id)")
+                let fit = try await engine.fit(
+                    url: url, to: spec, crop: placedCrop(aspect: spec.aspect.value, source: url),
+                    outputName: "\(stem)-\(spec.id)"
+                )
                 let out = visual.appendingPathComponent("\(stem)-\(spec.id).png")
                 writePNG(fit.url, to: out)
                 var checks = fit.verification.checks
@@ -300,7 +329,10 @@ func pair(_ url: URL, specID: String, outDirectory: URL) async throws {
 
     let engine = try FitEngine()
     let stem = url.deletingPathExtension().lastPathComponent
-    let fit = try await engine.fit(url: url, to: spec, outputName: "\(stem)-srgb")
+    let crop = placedCrop(aspect: spec.aspect.value, source: url)
+    let fit = try await engine.fit(
+        url: url, to: spec, crop: crop, outputName: "\(stem)-srgb"
+    )
 
     let srgbURL = outDirectory.appendingPathComponent("\(stem)-\(spec.id)-srgb.jpg")
     try? FileManager.default.removeItem(at: srgbURL)

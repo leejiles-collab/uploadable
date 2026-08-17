@@ -351,7 +351,9 @@ property.
 `App/ScreenshotHarness.swift` drives it, behind `#if DEBUG`, so no launch
 argument that rewrites app state exists in a shipping binary. It reaches the
 paywall by spending the free exports the way a person would rather than by
-setting a flag.
+setting a flag, and it drags the crop to the top of the frame the way a person
+would — `select` leaves the crop centred, and a centred square on a
+head-and-shoulders portrait clips the crown.
 
 The source photo must be a licensed portrait with a model release covering App
 Store screenshots — see *What the source photo has to be* below.
@@ -389,28 +391,67 @@ whenever the behaviour they describe changes.
 
 ---
 
-## What the source photo has to be
+## The source photo — licence and provenance
 
-Licensed stock with a model release that covers App Store screenshots. The
-screenshots show a real person's face at full size in a store listing, which is
-commercial use.
+The face in the App Store screenshots and in the Display P3 / sRGB matched pair
+is the same photograph:
 
 | | |
 |---|---|
-| Aspect | Portrait 3:4 |
-| Minimum | 2250 × 3000 |
-| Preferred | 3000 × 4000 or larger |
-| Framing | Head and shoulders, generous space above the crown |
+| File | `pexels-kooldark-19601394.jpg` |
+| Source | Pexels, photo ID **19601394** — `https://www.pexels.com/photo/19601394/` |
+| Licence | Pexels licence: free for commercial use, no attribution required |
+| Attribution | Not required. Photographer credited as *kooldark* if ever wanted |
+| Not AI-generated | Confirmed at the source before use |
+| Dimensions | 2024 × 3036, sRGB, no alpha |
+
+**`Fixtures/` is git-ignored, so the photograph is not in this repository.** That
+is deliberate — it keeps a real person's face out of what may become a public
+repo — and it is the reason the Pexels ID above is recorded rather than merely
+the filename. To rebuild the screenshots or the matched pair on a fresh
+checkout, download it again from that URL and put it at
+`Fixtures/pexels-kooldark-19601394.jpg`.
+
+### If it is ever replaced
+
+Licensed stock with terms covering commercial use, since the screenshots show a
+real face at full size in a store listing. What the photograph has to be:
+
+| | |
+|---|---|
+| Aspect | Portrait, 2:3 or 3:4 |
+| Minimum | Enough that no offered spec upscales — 2000 × 3000 clears all six |
+| Framing | Head and shoulders, real space above the crown |
 | Background | Plain, evenly lit, light |
 | Format | JPEG |
 
-The headroom matters more than anything else here. Several destinations want a
-square, and a square crop taken from a tight portrait clips the top of the head
-— which is the exact mistake the crop screen exists to let people avoid, so a
-screenshot demonstrating it would be self-defeating.
+The headroom matters more than the pixel count. Several destinations want a
+square, and a square crop from a tight portrait clips the top of the head —
+the exact mistake the crop screen exists to prevent, so a screenshot
+demonstrating it would argue against the app. This is not hypothetical: the
+first run on this photograph centre-cropped and cut the crown off. Both the
+harness and the CLI now place the crop at the top of the frame.
 
-Drop it at `Fixtures/screenshot-source.jpg` and run `./Tools/screenshots.sh`.
-Everything regenerates, including the numbers, and the numbers stay true.
+Copy it to `Fixtures/screenshot-source.jpg` and run `./Tools/screenshots.sh`.
+Everything regenerates, including every number, and the numbers stay true.
+
+### The Display P3 / sRGB matched pair
+
+```
+cd Tools/uploadablecli
+swift run -c release uploadablecli pair ../../Fixtures/pexels-kooldark-19601394.jpg \
+    --spec us-visa-ds160 --crop-y 0 --out ../../Fixtures/out
+```
+
+Two files with identical pixels and dimensions, one tagged sRGB and one tagged
+Display P3, both inside the DS-160 band. They exist to settle by upload whether
+a portal actually rejects P3 — which `SHIPPING.md` forbids the store copy from
+claiming until it has been tested.
+
+The pair needs a **real face**. A synthetic stand-in would be rejected by DS-160
+for face reasons that have nothing to do with colour space, which is precisely
+the confound the test is designed to remove. `--crop-y 0` matters for the same
+reason: a clipped crown is itself a rejection reason.
 
 ---
 

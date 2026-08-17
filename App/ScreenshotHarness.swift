@@ -35,6 +35,15 @@ enum ScreenshotHarness {
 
         try? store.open(url: source)
         store.select(spec(for: screen))
+
+        // Drag the crop to the top of the photo, which is what a person does
+        // and what the crop screen exists for. `select` leaves it centred, and
+        // a centred square on a head-and-shoulders portrait clips the crown —
+        // a store screenshot demonstrating that exact mistake would be an
+        // unusually effective argument against buying the app.
+        store.crop = CropRect(
+            x: store.crop.x, y: 0, width: store.crop.width, height: store.crop.height
+        )
         if screen == "crop" { return true }
 
         store.start()

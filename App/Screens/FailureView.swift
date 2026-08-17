@@ -1,5 +1,5 @@
 import SwiftUI
-import FitsKit
+import UploadableKit
 
 /// Why it cannot be done, and what would fix it.
 ///

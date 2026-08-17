@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Generates Fits.xcodeproj from project.yml.
+# Generates Uploadable.xcodeproj from project.yml.
 #
 # The bundle identifier prefix has exactly one home: BundleConfig.swift. This
 # script reads it from there and feeds it to XcodeGen and the entitlements.
@@ -15,12 +15,12 @@ if ! command -v xcodegen >/dev/null 2>&1; then
   echo
   echo "  brew install xcodegen"
   echo
-  echo "Then run this script again. (FitsKit and fitscli build with swift build"
+  echo "Then run this script again. (UploadableKit and uploadablecli build with swift build"
   echo "and do not need the Xcode project.)"
   exit 1
 fi
 
-CONFIG="$ROOT/FitsKit/Sources/FitsKit/Models/BundleConfig.swift"
+CONFIG="$ROOT/UploadableKit/Sources/UploadableKit/Models/BundleConfig.swift"
 BUNDLE_PREFIX="$(sed -n 's/.*static let prefix = "\(.*\)".*/\1/p' "$CONFIG")"
 
 if [ -z "$BUNDLE_PREFIX" ]; then
@@ -29,7 +29,7 @@ if [ -z "$BUNDLE_PREFIX" ]; then
 fi
 
 export BUNDLE_PREFIX
-APP_GROUP="group.${BUNDLE_PREFIX}.fits"
+APP_GROUP="group.${BUNDLE_PREFIX}.uploadable"
 
 write_entitlements() {
   cat > "$1" <<PLIST
@@ -47,8 +47,8 @@ PLIST
 }
 
 mkdir -p "$ROOT/Support"
-write_entitlements "$ROOT/Support/Fits.entitlements"
-write_entitlements "$ROOT/Support/FitsShare.entitlements"
+write_entitlements "$ROOT/Support/Uploadable.entitlements"
+write_entitlements "$ROOT/Support/UploadableShare.entitlements"
 
 xcodegen generate --spec "$ROOT/project.yml"
 
@@ -56,11 +56,11 @@ xcodegen generate --spec "$ROOT/project.yml"
 # but Xcode resolves it from the .xcscheme, two directories deeper. Left alone
 # the setting shows red in the scheme editor and an Xcode run talks to the real
 # App Store instead of the local config. Paid for on Smaller.
-SCHEME="$ROOT/Fits.xcodeproj/xcshareddata/xcschemes/Fits.xcscheme"
-WANT='identifier = "../../../Support/Fits.storekit"'
+SCHEME="$ROOT/Uploadable.xcodeproj/xcshareddata/xcschemes/Uploadable.xcscheme"
+WANT='identifier = "../../../Support/Uploadable.storekit"'
 if [ -f "$SCHEME" ]; then
   sed -i '' \
-    's|identifier = "\.\./\.\./Support/Fits\.storekit"|identifier = "../../../Support/Fits.storekit"|' \
+    's|identifier = "\.\./\.\./Support/Uploadable\.storekit"|identifier = "../../../Support/Uploadable.storekit"|' \
     "$SCHEME"
   if ! grep -qF "$WANT" "$SCHEME"; then
     echo
@@ -70,6 +70,6 @@ if [ -f "$SCHEME" ]; then
 fi
 
 echo
-echo "Generated Fits.xcodeproj"
+echo "Generated Uploadable.xcodeproj"
 echo "  bundle prefix: $BUNDLE_PREFIX"
 echo "  app group:     $APP_GROUP"

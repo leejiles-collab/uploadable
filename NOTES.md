@@ -28,7 +28,7 @@ and still refuses to upscale.
 
 Two reasons this is not optional:
 
-- Without it, Fits ships correct files of wrong framings and the user only finds
+- Without it, Uploadable ships correct files of wrong framings and the user only finds
   out when the portal rejects them — which is precisely the failure mode the
   whole product exists to remove.
 - The US Passport upload page states that the applicant crops inside the State
@@ -44,7 +44,7 @@ IMG_1335 at 7.9 MB down to 213 KB for DS-160 shows no visible degradation at
 
 `Fit.warnings` already carries `belowCommonMinimum` and `softerThanPreferred`.
 The Done screen shows the green ticks *and* the warnings together. A warning is
-never a failure — the file measurably meets the stated requirements, and Fits
+never a failure — the file measurably meets the stated requirements, and Uploadable
 does not get to overrule a government about its own form.
 
 Both warnings are written about the file, not the photograph. A test enforces

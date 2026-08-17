@@ -1,6 +1,6 @@
 import SwiftUI
 import Photos
-import FitsKit
+import UploadableKit
 
 /// The spec being met, one line per requirement.
 ///
@@ -178,7 +178,7 @@ struct DoneView: View {
     }
 
     /// Straight into the app's own Documents, which the Files app shows as
-    /// On My iPhone → Fits. No picker: the answer to "where did it go" should
+    /// On My iPhone → Uploadable. No picker: the answer to "where did it go" should
     /// be the same every time, and the share sheet covers anywhere else.
     private func saveToFiles() {
         do {
@@ -196,7 +196,7 @@ struct DoneView: View {
         Task {
             let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
             guard status == .authorized || status == .limited else {
-                saveMessage = "Fits needs permission to add photos. You can grant it in Settings."
+                saveMessage = "Uploadable needs permission to add photos. You can grant it in Settings."
                 return
             }
             do {
@@ -243,7 +243,7 @@ private struct TickRow: View {
 }
 
 /// A warning. Sits beside the ticks, never instead of them — the file does meet
-/// the stated requirements, and Fits does not overrule a government about its
+/// the stated requirements, and Uploadable does not overrule a government about its
 /// own form.
 private struct NoteRow: View {
     let warning: FitWarning

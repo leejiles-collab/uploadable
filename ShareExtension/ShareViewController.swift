@@ -1,6 +1,6 @@
 import UIKit
 import SwiftUI
-import FitsKit
+import UploadableKit
 
 /// Hosts the sheet.
 ///
@@ -91,8 +91,8 @@ final class ShareViewController: UIViewController {
             try? await Task.sleep(for: Self.firstFrameDeadline)
             guard !Task.isCancelled, let self, !self.hasDrawn else { return }
             self.fallback.show(
-                message: "Fits couldn't open here.",
-                detail: "Open the photo in the Fits app instead — it can do everything this sheet can."
+                message: "Uploadable couldn't open here.",
+                detail: "Open the photo in the Uploadable app instead — it can do everything this sheet can."
             )
             self.view.bringSubviewToFront(self.fallback)
         }
@@ -123,9 +123,9 @@ private final class FallbackView: UIView {
         super.init(frame: frame)
         backgroundColor = .systemBackground
 
-        title.text = "Fits couldn't start."
+        title.text = "Uploadable couldn't start."
         title.font = .preferredFont(forTextStyle: .headline)
-        detail.text = "Close this and open the photo in the Fits app instead."
+        detail.text = "Close this and open the photo in the Uploadable app instead."
         detail.font = .preferredFont(forTextStyle: .subheadline)
         detail.textColor = .secondaryLabel
 

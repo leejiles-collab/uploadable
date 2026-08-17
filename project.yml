@@ -1,4 +1,4 @@
-name: Fits
+name: Uploadable
 options:
   bundleIdPrefix: ${BUNDLE_PREFIX}
   deploymentTarget:
@@ -19,12 +19,12 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
 
 packages:
-  FitsKit:
-    # Local package inside this repo — not a fetched dependency. Fits has none.
-    path: FitsKit
+  UploadableKit:
+    # Local package inside this repo — not a fetched dependency. Uploadable has none.
+    path: UploadableKit
 
 targets:
-  Fits:
+  Uploadable:
     type: application
     platform: iOS
     sources:
@@ -34,20 +34,20 @@ targets:
       # The scheme's storeKitConfiguration is only a path — Xcode cannot resolve
       # it unless the file is a member of the project. buildPhase: none keeps a
       # test-only file out of the shipped bundle. Paid for on Smaller.
-      - path: Support/Fits.storekit
+      - path: Support/Uploadable.storekit
         buildPhase: none
     dependencies:
-      - package: FitsKit
-      - target: FitsShare
+      - package: UploadableKit
+      - target: UploadableShare
         embed: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: ${BUNDLE_PREFIX}.fits
-        INFOPLIST_FILE: Support/Fits-Info.plist
-        CODE_SIGN_ENTITLEMENTS: Support/Fits.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: ${BUNDLE_PREFIX}.uploadable
+        INFOPLIST_FILE: Support/Uploadable-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Support/Uploadable.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
 
-  FitsShare:
+  UploadableShare:
     type: app-extension
     platform: iOS
     sources:
@@ -55,21 +55,21 @@ targets:
       - path: Support/PrivacyInfo.xcprivacy
         buildPhase: resources
     dependencies:
-      - package: FitsKit
+      - package: UploadableKit
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: ${BUNDLE_PREFIX}.fits.share
-        INFOPLIST_FILE: Support/FitsShare-Info.plist
-        CODE_SIGN_ENTITLEMENTS: Support/FitsShare.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: ${BUNDLE_PREFIX}.uploadable.share
+        INFOPLIST_FILE: Support/UploadableShare-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Support/UploadableShare.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
 
 schemes:
-  Fits:
+  Uploadable:
     build:
       targets:
-        Fits: all
+        Uploadable: all
     run:
       config: Debug
-      storeKitConfiguration: Support/Fits.storekit
+      storeKitConfiguration: Support/Uploadable.storekit
     test:
       config: Debug

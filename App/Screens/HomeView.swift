@@ -1,6 +1,6 @@
 import SwiftUI
 import PhotosUI
-import FitsKit
+import UploadableKit
 
 /// One thing to do. Everything else on this screen is there to explain that
 /// there is only one thing to do.
@@ -16,7 +16,7 @@ struct HomeView: View {
             Spacer()
 
             VStack(spacing: 8) {
-                Text("Fits")
+                Text("Uploadable")
                     .font(.system(size: 52, weight: .bold, design: .rounded))
                 Text("Make your photo fit.")
                     .font(.title3)
@@ -47,7 +47,7 @@ struct HomeView: View {
             .controlSize(.large)
             .disabled(isLoading)
 
-            Text("Or share a photo to Fits from any app.")
+            Text("Or share a photo to Uploadable from any app.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 

@@ -1,4 +1,4 @@
-# Shipping Fits
+# Shipping Uploadable
 
 Everything outside this repository, in the order it has to happen. Filled in
 properly at phase 5; what is here already are the steps that must not be
@@ -7,11 +7,14 @@ improvised and the traps that have already cost time on other apps.
 | | |
 |---|---|
 | Team ID | `PT3HD7UTA5` (Individual) |
-| App bundle ID | `com.leejiles.fits` |
-| Share extension bundle ID | `com.leejiles.fits.share` |
-| App Group | `group.com.leejiles.fits` |
-| In-app purchase product ID | `com.leejiles.fits.pro` |
+| App bundle ID | `com.leejiles.uploadable` |
+| Share extension bundle ID | `com.leejiles.uploadable.share` |
+| App Group | `group.com.leejiles.uploadable` |
+| In-app purchase product ID | `com.leejiles.uploadable.pro` |
 | Price | $9.99, non-consumable, one payment |
+| App Store name | `Uploadable` — was `Fits`, which collided with fitness apps across the whole category |
+| App Store subtitle | `Visa & passport photo sizing` |
+| Apple ID | `6802146013` |
 | Free tier | `Config.freeExports` exports, currently 2 |
 
 `BundleConfig.swift` is the single source for the identifiers and `project.yml`
@@ -25,7 +28,7 @@ configured project at any time.
 **1. Re-check the specs.**
 
 ```
-cd Tools/fitscli && swift run -c release fitscli specs --check
+cd Tools/uploadablecli && swift run -c release uploadablecli specs --check
 ```
 
 It prints every preset with its numbers, official URL and verification date,
@@ -52,18 +55,18 @@ is the worst possible place to be approximately right.
 
 **4. App Store copy may not claim** that any specific portal rejects Display P3,
 or cite rejection rates, until that has been tested against the real form. It
-may say that Fits converts to sRGB, removes location data, and lands the file
+may say that Uploadable converts to sRGB, removes location data, and lands the file
 inside the required range — all three are verifiable from the output.
 
 ---
 
-## How we are allowed to describe what Fits does
+## How we are allowed to describe what Uploadable does
 
 The State Department pages say *"Do not use any kind of filter or retouching
 tools to change your appearance"* and *"We check all photos to ensure you are
 not using artificial intelligence tools."*
 
-Fits does not alter anyone's appearance. It re-encodes a file, changes its pixel
+Uploadable does not alter anyone's appearance. It re-encodes a file, changes its pixel
 dimensions and converts its colour space — it does not touch faces, skin,
 lighting or background. But the line between re-encoding a file and editing a
 photo is not one a reviewer is obliged to draw where we would, and a listing
@@ -77,7 +80,7 @@ So, in App Store copy, screenshots, the in-app UI and support pages:
   photo, AI, smart, automatic enhancement, or anything implying the photograph
   itself has been changed.
 
-The distinction to hold on to: Fits changes the *file*, never the *picture*.
+The distinction to hold on to: Uploadable changes the *file*, never the *picture*.
 That is also the honest description, which is why it is easy to keep to.
 
 ---
@@ -102,7 +105,7 @@ so the "fast path" saves nothing.
 - **Swift principal classes must be module-qualified** —
   `$(PRODUCT_MODULE_NAME).ShareViewController`. A bare name resolves to nothing
   and the user gets a blank sheet with no error anywhere. Already correct in
-  `Support/FitsShare-Info.plist`.
+  `Support/UploadableShare-Info.plist`.
 - **An extension cannot write to the app's Files folder.** Separate sandboxes.
   Stage into the App Group and let the app file it on next launch, and say so
   honestly in the UI rather than claiming the file is somewhere it is not yet.

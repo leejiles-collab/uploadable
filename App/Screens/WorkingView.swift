@@ -1,5 +1,5 @@
 import SwiftUI
-import FitsKit
+import UploadableKit
 
 /// Brief, but real.
 ///

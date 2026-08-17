@@ -1,0 +1,24 @@
+{
+  "identifier" : "FITS-LOCAL-STOREKIT",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "FITSPRO0001",
+      "localizations" : [
+        {
+          "description" : "Unlimited exports, for ever. One payment.",
+          "displayName" : "Uploadable Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.leejiles.uploadable.pro",
+      "referenceName" : "Uploadable Pro",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {},
+  "subscriptionGroups" : [],
+  "version" : { "major" : 3, "minor" : 0 }
+}

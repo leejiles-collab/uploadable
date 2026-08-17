@@ -1,5 +1,5 @@
 import SwiftUI
-import FitsKit
+import UploadableKit
 
 /// Where is this going, and which part of the photo is going there.
 ///

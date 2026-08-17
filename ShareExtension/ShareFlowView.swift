@@ -1,5 +1,5 @@
 import SwiftUI
-import FitsKit
+import UploadableKit
 
 /// The compact sheet. Same job as the app, less room to do it in.
 ///
@@ -62,7 +62,7 @@ struct ShareFlowView: View {
         HStack {
             Button("Cancel", action: onClose)
             Spacer()
-            Text("Fits").font(.headline)
+            Text("Uploadable").font(.headline)
             Spacer()
             // Balances the cancel button so the title sits centred.
             Button("Cancel") {}.opacity(0).disabled(true).accessibilityHidden(true)

@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import CoreGraphics
 import UniformTypeIdentifiers
-import FitsKit
+import UploadableKit
 
 /// The share sheet's state machine.
 ///
@@ -43,7 +43,7 @@ final class ShareModel {
 
     init() {
         inbox = FileManager.default.temporaryDirectory
-            .appendingPathComponent("fits-share-inbox", isDirectory: true)
+            .appendingPathComponent("uploadable-share-inbox", isDirectory: true)
         try? FileManager.default.createDirectory(at: inbox, withIntermediateDirectories: true)
     }
 
@@ -158,13 +158,13 @@ final class ShareModel {
     /// Save to Files, from a process that cannot reach the Files folder.
     ///
     /// An extension has its own container, so this stages into the App Group
-    /// and the app files it into *On My iPhone → Fits* the next time it runs.
+    /// and the app files it into *On My iPhone → Uploadable* the next time it runs.
     /// The sheet says so rather than claiming the photo is somewhere it is not
     /// yet — the same honesty Smaller needed for exactly the same reason.
     func saveToFiles(_ fit: Fit) -> String {
         do {
             _ = try FilesLibrary.stage(fit.url, as: fit.url.lastPathComponent)
-            return "Saved. It'll be in \(FilesLibrary.userFacingLocation) next time you open Fits."
+            return "Saved. It'll be in \(FilesLibrary.userFacingLocation) next time you open Uploadable."
         } catch {
             return "Couldn't save that. \(error.localizedDescription)"
         }

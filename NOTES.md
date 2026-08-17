@@ -125,6 +125,17 @@ reason the pair needed one.
 Identical pixels and dimensions at 1200 × 1200, both inside the DS-160 band,
 differing only in the colour tag. The synthetic pair is deleted.
 
-Until one of these is actually uploaded to a portal, `SHIPPING.md` still forbids
-the store copy from claiming that any portal rejects Display P3. Generating the
-pair was never the point — uploading it is.
+`SHIPPING.md` still forbids the store copy from claiming that any portal rejects
+Display P3, and **the upload test is deliberately not being run** — settling it
+would mean starting a real DS-160 application to watch a validator handle a
+colour profile, which is not worth doing for a sentence of marketing copy.
+
+It is also not needed. State's own page states the requirement in words —
+"in sRGB color space" — which is recorded against `usVisa` in `SpecCatalog`
+with its URL and read date. Converting to sRGB is therefore correct because the
+form asks for it, whether or not the validator checks. The claim the test would
+support is one nothing we ship makes.
+
+So this is closed, not outstanding. The pair stays where it is and `--crop-y`
+stays in the CLI, because the cost of keeping them is nil and the experiment is
+one upload away if the claim is ever actually wanted.

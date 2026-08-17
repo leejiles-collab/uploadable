@@ -58,6 +58,19 @@ or cite rejection rates, until that has been tested against the real form. It
 may say that Uploadable converts to sRGB, removes location data, and lands the file
 inside the required range — all three are verifiable from the output.
 
+*This prohibition stands, and the test behind it is deliberately not being run.*
+Settling it would mean starting a real DS-160 application to see what a
+validator does with a colour profile, which is not a reasonable thing to do for
+a marketing sentence. It is also unnecessary: the State Department's page states
+the requirement outright — **"in sRGB color space"** — so converting to sRGB is
+a documented requirement, not a precaution, and its correctness does not depend
+on whether the validator enforces it. Nothing shipping makes the untested claim,
+so nothing is blocked.
+
+The matched pair stays in `Fixtures/out` and `uploadablecli pair` stays in the
+CLI. If the claim is ever wanted, the experiment is one upload away — but wanting
+the claim is what would justify the cost, and it has not.
+
 ---
 
 ## How we are allowed to describe what Uploadable does

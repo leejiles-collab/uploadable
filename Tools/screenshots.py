@@ -99,21 +99,24 @@ for folder, spec in SPECS.items():
         canvas.save(dest, "PNG")   # RGB in, so no alpha out
         made.append(dest)
 
-# The in-app purchase's own review screenshot, which App Store Connect asks for
-# separately and which is NOT a listing image: no caption, no bezel, no ground —
-# a reviewer wants to see the purchase screen as the app draws it. Apple's floor
-# is 640 x 920; a device capture clears that several times over, so this is a
-# passthrough with the alpha channel dropped and the size asserted.
-IAP_MINIMUM = (640, 920)
-paywall = os.path.join(RAW, "iphone-paywall.png")
+# The in-app purchase's own review screenshot: a separate field, a separate size,
+# and NOT a listing image — no caption, no bezel, no ground, because a reviewer
+# wants the purchase screen as the app draws it.
+#
+# The size is the trap. Apple's help text says 640 x 920 minimum, which is true
+# and useless: the field rejects 1320x2868 outright with "The dimensions of one
+# or more screenshots are wrong". It wants 6.7" — 1290x2796 — which is what App
+# Store Connect actually accepted for Smaller. So this is captured on a 6.7"
+# device and the size is asserted exactly, not against a floor.
+IAP_EXACT = (1290, 2796)
+paywall = os.path.join(RAW, "iphone67-paywall.png")
 if os.path.exists(paywall):
-    shot = Image.open(paywall).convert("RGB")
-    if shot.width < IAP_MINIMUM[0] or shot.height < IAP_MINIMUM[1]:
-        print("IAP SCREENSHOT TOO SMALL  %dx%d, Apple's floor is %dx%d"
-              % (shot.width, shot.height, *IAP_MINIMUM))
+    shot = Image.open(paywall).convert("RGB")     # RGB in, so no alpha out
+    if (shot.width, shot.height) != IAP_EXACT:
+        print("IAP SCREENSHOT WRONG SIZE  %dx%d, the field wants exactly %dx%d"
+              % (shot.width, shot.height, *IAP_EXACT))
         sys.exit(1)
-    # Folder name carries the real size so the artefact is self-describing.
-    folder = "iap-review_%dx%d" % (shot.width, shot.height)
+    folder = "iap-review_%dx%d" % IAP_EXACT
     os.makedirs(os.path.join(OUT, folder), exist_ok=True)
     dest = os.path.join(OUT, folder, "paywall.png")
     shot.save(dest, "PNG")

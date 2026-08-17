@@ -214,13 +214,29 @@ POST /v1/appScreenshotSets   {"data":{"type":"appScreenshotSets",
   "attributes":{"screenshotDisplayType":"NONSENSE"}, ...}}
 ```
 
-### The review screenshot shows no price, and cannot
+### The review screenshot is 1290 x 2796, not the listing size
+
+**This field rejects 1320 x 2868.** The error is *"The dimensions of one or more
+screenshots are wrong"*, which names no size. Apple's help text for the field
+says 640 x 920 *minimum* — true, and actively misleading, because clearing the
+floor is not sufficient. The field wants **6.7"**, 1290 x 2796. That is the size
+App Store Connect accepted for Smaller, confirmed by reading the delivered asset
+back rather than by guessing:
+
+```
+GET /v2/inAppPurchases/<id>/appStoreReviewScreenshot   ->  imageAsset 1290 x 2796
+```
 
 `./Tools/screenshots.sh` produces it at
-`~/Desktop/Uploadable-AppStore/iap-review_1320x2868/paywall.png` — a plain
-device capture, no caption and no bezel, since a reviewer wants the purchase
-screen as the app draws it. It is reached honestly, by spending both free
-exports.
+`~/Desktop/Uploadable-AppStore/iap-review_1290x2796/paywall.png` — a plain device
+capture, no caption and no bezel, since a reviewer wants the purchase screen as
+the app draws it. It is reached honestly, by spending both free exports.
+
+The capture happens on a dedicated 6.7" simulator (`Uploadable-IAP-67`, an iPhone
+16 Plus), which the script creates if it is absent. **iPhone 16 Pro Max is 6.9",
+not 6.7"** — the 6.7" devices are 16 Plus, 15 Plus and 14/15 Pro Max. A 6.9"
+capture is not resized down to fit, because the two aspect ratios differ slightly
+and a resize would either distort the screen or letterbox it.
 
 The button on it has no price. **This is not fixable from the pipeline.** The
 `.storekit` configuration is a *scheme launch* setting that Xcode applies when

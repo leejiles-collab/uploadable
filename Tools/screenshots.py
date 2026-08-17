@@ -99,7 +99,31 @@ for folder, spec in SPECS.items():
         canvas.save(dest, "PNG")   # RGB in, so no alpha out
         made.append(dest)
 
+# The in-app purchase's own review screenshot, which App Store Connect asks for
+# separately and which is NOT a listing image: no caption, no bezel, no ground —
+# a reviewer wants to see the purchase screen as the app draws it. Apple's floor
+# is 640 x 920; a device capture clears that several times over, so this is a
+# passthrough with the alpha channel dropped and the size asserted.
+IAP_MINIMUM = (640, 920)
+paywall = os.path.join(RAW, "iphone-paywall.png")
+if os.path.exists(paywall):
+    shot = Image.open(paywall).convert("RGB")
+    if shot.width < IAP_MINIMUM[0] or shot.height < IAP_MINIMUM[1]:
+        print("IAP SCREENSHOT TOO SMALL  %dx%d, Apple's floor is %dx%d"
+              % (shot.width, shot.height, *IAP_MINIMUM))
+        sys.exit(1)
+    # Folder name carries the real size so the artefact is self-describing.
+    folder = "iap-review_%dx%d" % (shot.width, shot.height)
+    os.makedirs(os.path.join(OUT, folder), exist_ok=True)
+    dest = os.path.join(OUT, folder, "paywall.png")
+    shot.save(dest, "PNG")
+    made.append(dest)
+else:
+    missing.append("iap-review/paywall")
+
 for m in made:
     print("made    ", m.replace(OUT + "/", ""))
 for m in missing:
     print("MISSING ", m)
+if missing:
+    sys.exit(1)

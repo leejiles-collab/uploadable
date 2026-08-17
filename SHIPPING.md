@@ -135,6 +135,69 @@ so the "fast path" saves nothing.
 - **Publish the privacy answers.** Saving them is not enough and it blocks
   submission.
 
+## The in-app purchase
+
+**It does not exist in App Store Connect yet.** Verified by API, not assumed:
+`GET /v1/apps/6802146013/inAppPurchasesV2` returns **0 items**. Until it is
+created, a shipped build's paywall button reads "Get Uploadable Pro" with no
+price, and tapping it shows *"The store isn't available right now."* — because
+`Product.products(for:)` returns nothing. A reviewer who reaches the paywall
+cannot buy, which is a Guideline 2.1 rejection rather than a cosmetic gap.
+
+| | |
+|---|---|
+| Product ID | `com.leejiles.uploadable.pro` |
+| Type | Non-Consumable |
+| Reference Name | `Uploadable Pro` (internal only) |
+| Price | $9.99, base country United States |
+
+The product ID comes from `BundleConfig.proProductID` and must match exactly. It
+is permanent once created — it cannot be changed or reused, even after deletion.
+
+**Apps → Uploadable → Monetization → In-App Purchases → ✚**, then fill all four
+sections or it never leaves *Missing Metadata*:
+
+1. **Availability** — all countries and regions.
+2. **Price Schedule** — price points, not numbered tiers any more. $9.99 USD.
+3. **App Store Localization**, English (U.S.):
+   - Display Name (30 char limit): `Uploadable Pro`
+   - Description (45 char limit): `Unlimited exports. One payment.` (31)
+   - Avoid "unlock" — it reads as feature-gating to some reviewers.
+4. **Review Information** — screenshot plus notes:
+
+```
+Fitting photos is free and unlimited. The first two exports are free.
+To reach this screen: open a photo, choose a destination, tap Make it
+fit, then export the result three times. The third export shows the
+purchase screen.
+```
+
+Then **attach it to version 1.0** in the version page's *In-App Purchases and
+Subscriptions* section. A first-version IAP is reviewed alongside the app; if it
+is not attached it is simply not reviewed, and the app ships with a dead paywall
+regardless of how complete the product looks.
+
+### The review screenshot shows no price, and cannot
+
+`./Tools/screenshots.sh` produces it at
+`~/Desktop/Uploadable-AppStore/iap-review_1320x2868/paywall.png` — a plain
+device capture, no caption and no bezel, since a reviewer wants the purchase
+screen as the app draws it. It is reached honestly, by spending both free
+exports.
+
+The button on it has no price. **This is not fixable from the pipeline.** The
+`.storekit` configuration is a *scheme launch* setting that Xcode applies when
+Xcode launches the app; `simctl launch` bypasses it, and there is no
+`simctl storekit` subcommand to apply it another way. Do not spend an hour on
+this. Either:
+
+- **Use it as is.** The field documents where the purchase appears, which it
+  does. This is enough to get the IAP to *Ready to Submit* and unblock
+  everything else.
+- **Retake it from TestFlight** after the IAP exists and the build is uploaded,
+  when the real $9.99 renders. Only worth doing if the price-less button
+  actually bothers you.
+
 ## Store listing
 
 Paste these verbatim. Every claim here is one the app demonstrably makes good

@@ -12,7 +12,14 @@ struct HomeView: View {
     @State private var isLoading = false
 
     var body: some View {
-        VStack(spacing: Metrics.stackSpacing) {
+        // Read here and capture by value. `body` is main-actor isolated but
+        // PhotosPicker's label closure is not, so referencing `isLoading`
+        // inside it is a Swift 6 isolation violation — a warning today, an
+        // error on a stricter toolchain. The local is re-made every time body
+        // runs, so it is never stale.
+        let loading = isLoading
+
+        return VStack(spacing: Metrics.stackSpacing) {
             Spacer()
 
             VStack(spacing: 8) {
@@ -34,7 +41,7 @@ struct HomeView: View {
             // runs out of process and needs no permission at all.
             PhotosPicker(selection: $selection, matching: .images) {
                 Group {
-                    if isLoading {
+                    if loading {
                         ProgressView()
                     } else {
                         Text("Select Photo").font(.headline)
@@ -45,7 +52,7 @@ struct HomeView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(isLoading)
+            .disabled(loading)
 
             Text("Or share a photo to Uploadable from any app.")
                 .font(.footnote)

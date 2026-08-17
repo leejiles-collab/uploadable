@@ -139,3 +139,29 @@ support is one nothing we ship makes.
 So this is closed, not outstanding. The pair stays where it is and `--crop-y`
 stays in the CLI, because the cost of keeping them is nil and the experiment is
 one upload away if the claim is ever actually wanted.
+
+---
+
+## Pre-flight (R1–R6)
+
+### The in-app purchase was never created
+
+Checked by API rather than assumed: the app has **0** in-app purchases. All the
+StoreKit 2 code works and the paywall renders, but against an empty App Store
+Connect `Product.products(for:)` returns nothing, so the button shows no price
+and refuses to sell. Steps to create it are in `SHIPPING.md`.
+
+### A Swift 6 isolation warning was hiding in HomeView
+
+`PhotosPicker`'s label closure is not main-actor isolated, so referencing the
+`isLoading` @State inside it warned — twice, in Release. `.disabled(isLoading)`
+on the same view did not, because `body` itself is isolated; only the closure is
+not. Fixed by reading the value on the main actor into a local and capturing that
+by value. Warning today, error on a stricter toolchain, and unsound either way.
+
+### The harness is confirmed absent from Release behaviourally
+
+The Release build was installed and launched with `--screen=done`, the exact
+argument the Debug build obeys, and stayed on Home. That is the check — grepping
+an optimised Swift binary for string literals proves nothing, which is already a
+recorded trap.

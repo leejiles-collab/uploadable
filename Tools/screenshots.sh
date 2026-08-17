@@ -56,10 +56,16 @@ for DEVICE in "$IPHONE:iphone" "$IPAD:ipad"; do
     [ "$OTHER" = "com.leejiles.uploadable" ] || xcrun simctl terminate "$ID" "$OTHER" 2>/dev/null || true
   done
 
-  for SCREEN in done crop nz failure home; do
+  # The paywall is not a store screenshot — it is the review screenshot the
+  # in-app purchase itself requires in App Store Connect. One device is enough
+  # for that field, so it is captured on iPhone only.
+  SCREENS="done crop nz failure home"
+  [ "$TAG" = "iphone" ] && SCREENS="$SCREENS paywall"
+
+  for SCREEN in $SCREENS; do
     xcrun simctl terminate "$ID" com.leejiles.uploadable 2>/dev/null || true
     xcrun simctl launch "$ID" com.leejiles.uploadable "--screen=$SCREEN" >/dev/null
-    case "$SCREEN" in done|nz) sleep 16 ;; *) sleep 7 ;; esac
+    case "$SCREEN" in done|nz|paywall) sleep 16 ;; *) sleep 7 ;; esac
     xcrun simctl io "$ID" screenshot "$RAW/$TAG-$SCREEN.png" >/dev/null 2>&1
   done
 done

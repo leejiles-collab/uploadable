@@ -39,6 +39,17 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "1CD20EE6731C27EEB5CC4252"
+               BuildableName = "UploadableUITests.xctest"
+               BlueprintName = "UploadableUITests"
+               ReferencedContainer = "container:Uploadable.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

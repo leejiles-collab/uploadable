@@ -20,6 +20,7 @@
 		9B5AF9663DB2039C1BEDE587 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0CA4A13E65C117F691BE12E5 /* PrivacyInfo.xcprivacy */; };
 		A08FBEE564FDE6887730CBC9 /* ShareModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920AC27B94A5F5C6787B8F82 /* ShareModel.swift */; };
 		B0F48C8A66139294A8584759 /* UploadableKit in Frameworks */ = {isa = PBXBuildFile; productRef = 452FCD3CA34E710F8E278958 /* UploadableKit */; };
+		B645EF1DD2243F15F767964E /* CropGestureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA88144C7E0E9F4F00AB19D /* CropGestureTests.swift */; };
 		BACEC8E964059D8EC1AE9E68 /* UploadableApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C1029DBB33BC306A0C1AAAF /* UploadableApp.swift */; };
 		BE9D94195195E5ABB14431D1 /* UploadableKit in Frameworks */ = {isa = PBXBuildFile; productRef = E97D862B457F214B5482B5A1 /* UploadableKit */; };
 		D095A12A1AEBE4B8D4E3826A /* ShareFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 194A701B3E3D0E69270FA903 /* ShareFlowView.swift */; };
@@ -27,6 +28,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		67C604CB100D9763E92EC7B5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0E1F85A938BDF7A3D0EA6169 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2FAB872F1326A4AE59A23BBE;
+			remoteInfo = Uploadable;
+		};
 		C26BA0BB98EFBE2D82A645E8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0E1F85A938BDF7A3D0EA6169 /* Project object */;
@@ -58,6 +66,7 @@
 		1DDAFAAAAB0399818D9A2DA2 /* UploadableStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadableStore.swift; sourceTree = "<group>"; };
 		2C1029DBB33BC306A0C1AAAF /* UploadableApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadableApp.swift; sourceTree = "<group>"; };
 		4237A4E814CB35AF626850F9 /* Uploadable.storekit */ = {isa = PBXFileReference; path = Uploadable.storekit; sourceTree = "<group>"; };
+		4BA88144C7E0E9F4F00AB19D /* CropGestureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CropGestureTests.swift; sourceTree = "<group>"; };
 		4ECED5D86EF798BC110B51D1 /* Uploadable.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uploadable.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5424D332E1AD5B361BAB917D /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		5AB61347401DE5AB1C449844 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -65,6 +74,7 @@
 		7C598C87DED9A745E8EBD8C0 /* DoneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoneView.swift; sourceTree = "<group>"; };
 		7DFB9E0D453A02F98CE889D0 /* ScreenshotHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotHarness.swift; sourceTree = "<group>"; };
 		920AC27B94A5F5C6787B8F82 /* ShareModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareModel.swift; sourceTree = "<group>"; };
+		9312F7359012530B62E72265 /* UploadableUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = UploadableUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A436FF1FA2DA5FD9A4D6D3A8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B94588551D391FEF63A7DD03 /* WorkingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkingView.swift; sourceTree = "<group>"; };
 		DB243FDEDFA01B0F9657F76B /* UploadableShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = UploadableShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -128,6 +138,7 @@
 			children = (
 				4ECED5D86EF798BC110B51D1 /* Uploadable.app */,
 				DB243FDEDFA01B0F9657F76B /* UploadableShare.appex */,
+				9312F7359012530B62E72265 /* UploadableUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -152,6 +163,7 @@
 				7ED92357E9693882D4498E9D /* Packages */,
 				76981806EB5DD3C6846F0317 /* ShareExtension */,
 				E84DB83CCDC0A7D4E0FE0933 /* Support */,
+				E2174EC65934BF9AC3B9190C /* UITests */,
 				B07B3209F4C3986B9097FBCB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -168,6 +180,14 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		E2174EC65934BF9AC3B9190C /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				4BA88144C7E0E9F4F00AB19D /* CropGestureTests.swift */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
 		E84DB83CCDC0A7D4E0FE0933 /* Support */ = {
 			isa = PBXGroup;
 			children = (
@@ -180,6 +200,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1CD20EE6731C27EEB5CC4252 /* UploadableUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 07F8C6A20F915AD67A9040E9 /* Build configuration list for PBXNativeTarget "UploadableUITests" */;
+			buildPhases = (
+				E68B6E0F08C52E24A530AB64 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				518F176ACAE99D7192506619 /* PBXTargetDependency */,
+			);
+			name = UploadableUITests;
+			packageProductDependencies = (
+			);
+			productName = UploadableUITests;
+			productReference = 9312F7359012530B62E72265 /* UploadableUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		2FAB872F1326A4AE59A23BBE /* Uploadable */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D43C45623F4648B8557B11DA /* Build configuration list for PBXNativeTarget "Uploadable" */;
@@ -231,6 +269,11 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					1CD20EE6731C27EEB5CC4252 = {
+						DevelopmentTeam = PT3HD7UTA5;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 2FAB872F1326A4AE59A23BBE;
+					};
 					2FAB872F1326A4AE59A23BBE = {
 						DevelopmentTeam = PT3HD7UTA5;
 						ProvisioningStyle = Automatic;
@@ -259,6 +302,7 @@
 			projectRoot = "";
 			targets = (
 				2FAB872F1326A4AE59A23BBE /* Uploadable */,
+				1CD20EE6731C27EEB5CC4252 /* UploadableUITests */,
 				5F5B992A4FFCE2D5F442FD83 /* UploadableShare */,
 			);
 		};
@@ -310,9 +354,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E68B6E0F08C52E24A530AB64 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B645EF1DD2243F15F767964E /* CropGestureTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		518F176ACAE99D7192506619 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2FAB872F1326A4AE59A23BBE /* Uploadable */;
+			targetProxy = 67C604CB100D9763E92EC7B5 /* PBXContainerItemProxy */;
+		};
 		982CFE707EE01F23854C8130 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 5F5B992A4FFCE2D5F442FD83 /* UploadableShare */;
@@ -321,6 +378,23 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		305AEE35B4BDF05038B185CE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.leejiles.uploadable.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Uploadable;
+			};
+			name = Release;
+		};
 		49976F176383A4BF9ACE90B5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -351,6 +425,23 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.leejiles.uploadable;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6942D7AA2091DB2DDD1C5AEA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.leejiles.uploadable.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Uploadable;
 			};
 			name = Debug;
 		};
@@ -523,6 +614,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		07F8C6A20F915AD67A9040E9 /* Build configuration list for PBXNativeTarget "UploadableUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6942D7AA2091DB2DDD1C5AEA /* Debug */,
+				305AEE35B4BDF05038B185CE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		63A181F440D7C1EE2EDB0D62 /* Build configuration list for PBXNativeTarget "UploadableShare" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

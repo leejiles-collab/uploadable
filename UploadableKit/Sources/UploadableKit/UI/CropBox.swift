@@ -53,6 +53,9 @@ public struct CropBox: View {
                         .gesture(pinchGesture())
                         .accessibilityLabel("Crop area")
                         .accessibilityHint("Drag to move, pinch to resize")
+                        // The crop's own size, so VoiceOver can report it and a
+                        // UI test can tell whether a gesture actually moved it.
+                        .accessibilityValue(String(format: "%.4f", crop.width))
                 }
             }
         }

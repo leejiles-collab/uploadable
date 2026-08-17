@@ -57,3 +57,47 @@ too. See the language section in `SHIPPING.md`.
 official page. `SpecCatalog.drafts` is never shown as a choice. If a draft is
 ever promoted, the Spec screen still shows its verification date — that row
 already exists in the design for a reason.
+
+---
+
+## Phase 5 — ship prep
+
+### Three things are provisional until the user decides
+
+Everything else is finished. These are wired with a working placeholder so the
+build is never broken, and each has a one-command swap:
+
+- **The icon.** Direction A (corner marks) in indigo is in
+  `Assets.xcassets`. Four directions × three colourways were rendered at true
+  home-screen size for the choice. `./Tools/set-icon.sh <1024.png>` swaps it.
+- **The screenshot photograph.** `Fixtures/screenshot-source.jpg` is a synthetic
+  placeholder. Licensed stock with a model release goes in the same path and
+  `./Tools/screenshots.sh` regenerates all ten files, numbers included. Required
+  properties are in `SHIPPING.md` under *What the source photo has to be*.
+- **The GitHub repository.** `docs/` is written and ready; there is no remote
+  yet. Pages needs a **public** repo unless the account is on a paid plan, and
+  Apple must be able to reach both URLs anonymously.
+
+### The captions must never state a number
+
+The five captions say nothing measurable — "Every requirement, met." and so on.
+That is what makes the photograph swappable at the last minute: every number a
+viewer sees is inside the screenshot and was produced by the engine on whatever
+photo was passed in. A caption naming a size would have to be re-checked by hand
+every time the source changes, and one day it would not be.
+
+### The privacy manifest is derived, not asserted
+
+`Support/PrivacyInfo.xcprivacy` was checked line by line against the source and
+two entries were wrong — a `UserDefaults` reason code that did not account for
+the App Group, and a declared API the app never calls. Both are recorded in
+`SHIPPING.md` and `SCALLAPP.md` with the greps that find them. Re-run those
+greps rather than trusting the file, because nothing in the toolchain will.
+
+### The harness stays, behind `#if DEBUG`
+
+`App/ScreenshotHarness.swift` is permanent. Store screenshots have to be
+regenerated whenever the photo or the numbers change, and a pipeline that
+requires editing source first is a pipeline nobody runs. It cannot exist in a
+shipping binary — a launch argument that rewrites app state has no business
+there — so it is compiled out of Release entirely.

@@ -24,6 +24,9 @@ struct RootView: View {
                 .animation(.easeInOut(duration: 0.2), value: phaseID)
         }
         .task {
+            #if DEBUG
+            if await ScreenshotHarness.run(store: store) { return }
+            #endif
             // Before anything else: file whatever the share extension saved
             // while the app was not running. It cannot reach the Files folder
             // from its own sandbox, so this is the moment its work shows up.

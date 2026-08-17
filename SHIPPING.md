@@ -124,5 +124,320 @@ so the "fast path" saves nothing.
 
 ## Store listing
 
-Written at phase 5. Support and privacy pages go in `docs/` on GitHub Pages,
-support email `leejiles@gmail.com`.
+Paste these verbatim. Every claim here is one the app demonstrably makes good
+on, and nothing in it describes editing a photograph — see *How we are allowed
+to describe what Uploadable does* above before changing a word.
+
+### Name and subtitle
+
+```
+Uploadable
+Visa & passport photo sizing
+```
+
+### Description
+
+The first paragraph is the only part most people read, and the App Store
+truncates the rest behind *more*. It leads with the problem, names no features,
+and contains no marketing language.
+
+```
+A portal rejected your photo and didn't tell you why. It was probably the file:
+the wrong dimensions, too many kilobytes, too few, a PNG where JPEG was
+required, or a profile the form can't read. Uploadable changes the file until it
+matches what the form asks for, then shows you every requirement it met.
+
+WHAT IT CHANGES
+
+- Dimensions, to exactly what the form requires
+- File size, into the kilobyte range it asks for, not merely under the maximum
+- Format, to JPEG
+- Colour, to sRGB
+- Location data and camera metadata, removed
+
+WHAT IT LEAVES ALONE
+
+Your photograph. No filters, no retouching, no background removal, no AI. It
+changes the file, never the picture. Government photo pages ask you not to alter
+your appearance and say they screen for it, so Uploadable stays well clear of
+that line.
+
+DESTINATIONS
+
+US Visa (DS-160), US Passport, UK Passport, India eVisa, Canada PR Card, New
+Zealand Visa / NZeTA. Each one shows the date its requirements were last read
+off the official government page, with a link to that page. Anything we could
+not confirm is not offered.
+
+If yours isn't listed, Custom takes the numbers straight off your form.
+
+YOU PLACE THE CROP
+
+A square crop centred on a portrait usually cuts off the top of someone's head.
+Uploadable shows you the crop rectangle over your photo and lets you drag and
+resize it before anything happens. It does not guess at framing — it does not
+look at the picture at all.
+
+IT CHECKS ITS OWN WORK
+
+Before handing you a file, Uploadable re-reads it from disk: the pixel
+dimensions, the byte count, that it is genuinely a JPEG, that sRGB is embedded,
+that the location data is gone. A file that fails any check is discarded rather
+than given to you. When it cannot meet a requirement — a photo too small to
+reach the minimum, a range it cannot land inside — it says so and stops, instead
+of enlarging your photo and inventing detail that was never there.
+
+NOTHING LEAVES YOUR PHONE
+
+No account, no sign-in, no upload, no analytics, no tracking, no third-party
+code. It works in Airplane Mode, which is the easiest way to prove it to
+yourself.
+
+PRICE
+
+Fitting photos is free and unlimited — run any photo against any destination and
+see the full result before paying anything. The first two exports are free.
+After that, Uploadable Pro is $9.99 once. No subscription.
+
+Uploadable cannot tell you whether your photograph itself will be accepted. Head
+size, expression, lighting and background are the photographer's problem. It
+makes the file correct.
+```
+
+### Promotional text (170 characters, editable without a new build)
+
+Paste as a single line — the wrapping below is this file's, not the field's.
+
+```
+Rejected photo, no explanation? Usually it's the file. Uploadable resizes it, lands it inside the required kilobyte range, converts to JPEG/sRGB, strips location data.
+```
+
+### Keywords (100 characters, comma-separated, no spaces)
+
+```
+ds160,kb,jpeg,resize,compress,crop,id,headshot,immigration,esta,eta,ircc,embassy,green,card,nz,form
+```
+
+99 characters. Two rules govern this field and both cost real terms:
+
+- **Never repeat the name or subtitle.** Apple already indexes those, so
+  `visa`, `passport`, `photo`, `sizing` and `uploadable` here would be dead
+  weight. This is why the list reads oddly — the obvious words are already
+  working elsewhere.
+- **Apple builds phrases from the list**, so `green` + `card` covers "green
+  card" without spending characters on the phrase.
+
+The one judgement call is `resize`, which may stem close enough to the
+subtitle's `sizing` to be redundant. It is the highest-volume term left
+available and worth the risk; if a later version needs the six characters, that
+is where to find them.
+
+### Everything else on the form
+
+| Field | Value |
+|---|---|
+| Category | Primary **Utilities**, secondary **Travel** |
+| Age rating | 4+ — every question answered No |
+| Price | **Free**. The $9.99 is the IAP, not the download |
+| Copyright | `2026 Lee Jiles` |
+| Privacy Policy URL | `https://<user>.github.io/uploadable/privacy.html` |
+| Support URL | `https://<user>.github.io/uploadable/support.html` |
+| Marketing URL | `https://<user>.github.io/uploadable/` (optional) |
+| Support email | `leejiles@gmail.com` |
+| Sign-in required | **Unchecked** |
+
+### App Privacy answers
+
+Answer **"Data Not Collected"** and nothing else. Then press **Publish** —
+saving is not enough and an unpublished answer set blocks submission.
+
+This is verifiable rather than aspirational: the app contains no `URLSession`,
+no network code of any kind, no analytics and no third-party SDKs. See *Privacy
+manifest* below.
+
+### Review notes
+
+```
+No account or sign-in is required. Everything works offline — Airplane Mode is
+a good way to see that nothing is uploaded.
+
+Fitting a photo is free and unlimited. The first two exports are free; after
+that the $9.99 non-consumable unlocks unlimited exports. To reach the purchase
+screen: open a photo, choose a destination, tap Make it fit, then export the
+result three times.
+
+Uploadable does not edit photographs. It changes file properties only —
+dimensions, format, colour profile, byte size, metadata. There is no filter,
+retouching, background removal, face detection or AI anywhere in the app.
+```
+
+### Screenshots
+
+`./Tools/screenshots.sh path/to/portrait.jpg` produces both required sizes into
+`~/Desktop/Uploadable-AppStore/` and verifies each file. Details in *Screenshot
+pipeline* below.
+
+Support and privacy pages live in `docs/` and are served by GitHub Pages.
+
+---
+
+## Privacy manifest
+
+`Support/PrivacyInfo.xcprivacy`, added as a **resource** to both the app and the
+extension in `project.yml`. Confirm it is in both built bundles rather than
+assuming — a manifest that is a project member but not in the resources build
+phase compiles fine and ships nothing:
+
+```
+ls "$APP/PrivacyInfo.xcprivacy" "$APP/PlugIns/UploadableShare.appex/PrivacyInfo.xcprivacy"
+```
+
+The declarations were checked against the source, not guessed, and the check
+found two errors worth remembering:
+
+- **`UserDefaults(suiteName:)` needs `1C8F.1`, not `CA92.1`.** `CA92.1` covers
+  the app's own defaults; `1C8F.1` covers an App Group shared with extensions.
+  The manifest said `CA92.1` while `ExportStore` reads an App Group suite and
+  never touches `UserDefaults.standard`. Any app with a share extension that
+  shares state is likely to have this exact mismatch.
+- **`NSPrivacyAccessedAPICategoryDiskSpace` was declared and never used.** No
+  capacity API appears anywhere in the app. Removed. Declaring an API you do not
+  call is not caught by anything and quietly makes the manifest untrue.
+
+To re-check after any change, grep for what each category actually covers:
+
+```
+grep -rn "UserDefaults" App ShareExtension UploadableKit/Sources
+grep -rnE "creationDate|modificationDate|attributesOfItem|getattrlist" App ShareExtension UploadableKit/Sources
+grep -rnE "volumeAvailableCapacity|systemFreeSize|statfs" App ShareExtension UploadableKit/Sources
+grep -rnE "systemUptime|mach_absolute_time" App ShareExtension UploadableKit/Sources
+grep -rn "activeInputModes" App ShareExtension UploadableKit/Sources
+```
+
+The last three must return nothing, or the manifest needs a new entry.
+
+**The "no network" claim is verifiable and was verified**, because the privacy
+page and the description both state it outright:
+
+```
+grep -rnE "URLSession|NWConnection|dataTask|CFStream|getaddrinfo|socket\(|Analytics|Firebase|Crashlytics" App ShareExtension UploadableKit/Sources
+```
+
+Nothing. Every import across the three targets is an Apple framework —
+CoreGraphics, CryptoKit, Foundation, ImageIO, Observation, Photos, PhotosUI,
+Security, StoreKit, SwiftUI, UIKit, UniformTypeIdentifiers — plus the one local
+package. There are no third-party dependencies, so no bundled SDK manifests to
+reconcile.
+
+---
+
+## Screenshot pipeline
+
+```
+./Tools/screenshots.sh                       # Fixtures/screenshot-source.jpg
+./Tools/screenshots.sh ~/Desktop/model.jpg   # any portrait
+```
+
+Builds for both simulators, drives the app to each screen, captures, composites
+the captions, and verifies every output file. Result:
+`~/Desktop/Uploadable-AppStore/` with one folder per required size.
+
+**The photograph is the only input.** Every number a viewer sees — dimensions,
+kilobytes, the ticks — is inside the screenshot and was produced by the engine
+running on that photo. The captions therefore state no numbers at all, so
+swapping the photograph can never turn a caption into a false claim. Keep that
+property.
+
+`App/ScreenshotHarness.swift` drives it, behind `#if DEBUG`, so no launch
+argument that rewrites app state exists in a shipping binary. It reaches the
+paywall by spending the free exports the way a person would rather than by
+setting a flag.
+
+The source photo must be a licensed portrait with a model release covering App
+Store screenshots — see *What the source photo has to be* below.
+
+Traps this pipeline already handles, all of which cost time:
+
+- **Alpha is rejected silently.** Every file is checked with `sips -g hasAlpha`
+  and the script exits non-zero if any carries one.
+- **Another app of ours left running becomes a `◀ AppName` back-breadcrumb** in
+  the status bar, because iOS believes it launched us. The script terminates
+  every other `com.leejiles.*` app first. Caught only by reading a finished
+  screenshot closely.
+- **The status bar is overridden** to 9:41, full bars, charged — otherwise it
+  shows whatever the simulator drifted to.
+- **Only the largest size per family is uploaded.** 1320 × 2868 iPhone,
+  2064 × 2752 iPad. Apple scales the rest.
+
+---
+
+## Publishing the support and privacy pages
+
+`docs/` holds `index.html`, `privacy.html`, `support.html` and `style.css`,
+ready to serve. To publish:
+
+1. Create a **public** GitHub repository. Pages on a private repository needs a
+   paid plan, and Apple has to be able to reach both URLs anonymously.
+2. `git remote add origin …` and push `main`.
+3. **Settings → Pages → Source: Deploy from a branch → `main` / `/docs` → Save.**
+4. Wait for the first deploy, then open both URLs in a private window. Apple
+   checks that they load and that the support page has a contact route.
+5. Put those URLs into the App Information and Version fields.
+
+Both pages carry the support email and a "Last updated" date. Update the date
+whenever the behaviour they describe changes.
+
+---
+
+## What the source photo has to be
+
+Licensed stock with a model release that covers App Store screenshots. The
+screenshots show a real person's face at full size in a store listing, which is
+commercial use.
+
+| | |
+|---|---|
+| Aspect | Portrait 3:4 |
+| Minimum | 2250 × 3000 |
+| Preferred | 3000 × 4000 or larger |
+| Framing | Head and shoulders, generous space above the crown |
+| Background | Plain, evenly lit, light |
+| Format | JPEG |
+
+The headroom matters more than anything else here. Several destinations want a
+square, and a square crop taken from a tight portrait clips the top of the head
+— which is the exact mistake the crop screen exists to let people avoid, so a
+screenshot demonstrating it would be self-defeating.
+
+Drop it at `Fixtures/screenshot-source.jpg` and run `./Tools/screenshots.sh`.
+Everything regenerates, including the numbers, and the numbers stay true.
+
+---
+
+## The app icon
+
+`Assets.xcassets/AppIcon.appiconset/icon-1024.png`, wired via
+`ASSETCATALOG_COMPILER_APPICON_NAME`. To swap it:
+
+```
+./Tools/set-icon.sh path/to/1024.png
+```
+
+It replaces the icon, flattens any alpha channel, and verifies the result — an
+icon with alpha is rejected, and so is one with rounded corners already drawn
+in. Ship a full-bleed square; iOS applies the mask.
+
+---
+
+## Submission, in order
+
+1. `./Tools/generate-project.sh`
+2. Re-check the specs — *Before every submission*, step 1.
+3. Run the suite. It must be green.
+4. Bump the version and build number in `project.yml`.
+5. Archive: **Any iOS Device (arm64)**, Product → Archive.
+6. Distribute → **App Store Connect** — never TestFlight Internal Only.
+7. In App Store Connect: pricing Free, IAP price and availability set, age
+   rating all No, privacy answers **published**, screenshots uploaded, listing
+   copy pasted, review notes filled in, both URLs live.
+8. Attach the build to the version, then Submit.

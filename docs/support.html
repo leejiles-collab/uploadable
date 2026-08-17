@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support — Uploadable</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+
+<h1>Support</h1>
+<p class="updated">Uploadable · Last updated 16 August 2026</p>
+
+<p class="lede">Uploadable makes a photo meet an upload requirement: the right
+shape, the right pixel dimensions, inside the size range the form asks for, as a
+JPEG in sRGB with the location data removed. Everything below is how it works
+and what to do when it does something you did not expect.</p>
+
+<h2>Making a photo fit</h2>
+<p>Open Uploadable, tap <strong>Select Photo</strong>, choose the destination
+your form belongs to, place the crop, and tap <strong>Make it fit</strong>. You
+can also share a photo to Uploadable from Photos, Files, or any app with a share
+button.</p>
+<p>If the destination you need is not listed, choose <strong>Custom</strong> and
+type the numbers your form asks for.</p>
+
+<h2>Placing the crop</h2>
+<p>Choosing a destination reveals a crop rectangle over your photo, locked to
+the shape that destination requires. Drag it to move, pinch to resize.</p>
+<p>This step is worth taking care over. A square crop centred on a portrait
+photo will usually clip the top of someone's head, and the resulting file is
+correct in every measurable way while being the wrong part of the photograph.
+Uploadable will not guess at framing on your behalf — it does not look at the
+picture at all.</p>
+
+<h2>Where your photo goes</h2>
+<p><strong>Save to Photos</strong> puts it in your photo library.
+<strong>Save to Files</strong> puts it in <strong>Files → On My iPhone →
+Uploadable</strong>. <strong>Share</strong> hands it to any app you choose.</p>
+<div class="note">
+<p style="margin:0"><strong>One thing that surprises people.</strong> A photo
+saved to Files from the share sheet shows up in Files → Uploadable only after
+you next open the Uploadable app. This is an iOS rule, not a choice: a share
+extension runs in its own sandbox and is not permitted to write into the app's
+Files folder. The extension saves your photo straight away and the app files it
+the next time it runs. Nothing is lost in between.</p>
+</div>
+
+<h2>What the green ticks mean</h2>
+<p>The result screen lists each thing the form asked for and confirms it. Those
+are not predictions — Uploadable re-reads the finished file from disk and checks
+it: the pixel dimensions, the byte count, that it really is a JPEG, that the
+sRGB profile is embedded, and that the EXIF and location data are gone. If any
+check fails, the file is discarded rather than handed to you.</p>
+
+<h2>"Verified" dates</h2>
+<p>Each destination shows the date its requirements were last read off the
+official government page, with a link to that page. Governments change these
+numbers without announcing it, and a stale number would turn a portal's
+rejection into our fault. If a date looks old, check the official page — the
+link is right there.</p>
+<p>Destinations whose requirements could not be confirmed are not offered at
+all. A specification that rules nothing out would happily approve a screenshot.</p>
+
+<h2>Notes beside the ticks</h2>
+<p>Sometimes a result passes and there is still something worth telling you.</p>
+<ul>
+<li><strong>Smaller than other forms require.</strong> A few destinations state
+no minimum size at all, so a small photo technically satisfies them. If your
+result is smaller than every other form we know of asks for, Uploadable says so
+— particularly where the portal crops the photo again after upload, which leaves
+fewer pixels still.</li>
+<li><strong>Compressed harder than we'd like.</strong> Fitting a large photo
+into a tight size limit costs quality. Uploadable reduces the dimensions first
+to protect it, and tells you if it still had to compress firmly.</li>
+</ul>
+<p>Neither is a failure. The file meets the stated requirements either way.</p>
+
+<h2>When it refuses</h2>
+<p>Uploadable will not produce a file it expects to be rejected. If your photo
+is 400 × 400 and the form needs at least 600 × 600, it says exactly that and
+stops, rather than enlarging it — enlarging invents detail that is not there,
+and forms check for it. The same goes for a size range it cannot reach: you will
+be told the numbers rather than handed a file that fails.</p>
+
+<h2>What Uploadable does not do</h2>
+<p>It does not edit your photograph. No filters, no retouching, no background
+removal, no face detection, no AI of any kind. It changes the file — the format,
+the dimensions, the colour profile, the metadata — and never the picture.</p>
+<p>That is deliberate. Government photo pages ask you not to alter your
+appearance and say they screen for it. Uploadable is a file tool, and it stays
+on the right side of that line.</p>
+<p>It also cannot tell you whether your photograph itself will be accepted. Head
+size, expression, lighting and background are the photography problem, and no
+file tool can judge them.</p>
+
+<h2>Free exports and Uploadable Pro</h2>
+<p>Fitting photos is free and unlimited — you can run any photo against any
+destination and see the full result. What is metered is getting the file out:
+the first two exports are free, and after that Uploadable Pro is
+<strong>$9.99, paid once</strong>. No subscription, no account.</p>
+<p>Saving one result to Photos and then to Files and then sharing it counts as
+one export, not three.</p>
+
+<h2>Restoring your purchase</h2>
+<p>Sign in to the same Apple Account you bought it with, open Uploadable, and
+tap <strong>Restore Purchases</strong> on the Pro screen. The purchase is
+attached to your Apple Account, so it comes back on any device you own.</p>
+
+<h2>Still stuck</h2>
+<p>Email <a href="mailto:leejiles@gmail.com">leejiles@gmail.com</a>. Telling us
+the destination you chose, the dimensions of your original photo, and what
+Uploadable said makes it much faster to work out what happened.</p>
+
+</main>
+
+<footer>
+<a href="privacy.html">Privacy Policy</a>
+<a href="index.html">About Uploadable</a>
+</footer>
+</body>
+</html>

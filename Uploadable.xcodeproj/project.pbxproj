@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		111F7C6CB357FD66C780A3CB /* ScreenshotHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DFB9E0D453A02F98CE889D0 /* ScreenshotHarness.swift */; };
 		2A9F8A24400DCA7D14BDA57E /* SpecView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1412B0CA8729574577E4E515 /* SpecView.swift */; };
 		425C8A1FB330CB259BBC8AE7 /* WorkingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B94588551D391FEF63A7DD03 /* WorkingView.swift */; };
 		4A2DD3879F926F53179C3B95 /* FailureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4586C88BDAC98809962B2F /* FailureView.swift */; };
 		5F250679A157A0E3D00686FE /* UploadableStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DDAFAAAAB0399818D9A2DA2 /* UploadableStore.swift */; };
 		7ECBD600D9D02B749B3FDB49 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AB61347401DE5AB1C449844 /* HomeView.swift */; };
 		8F0A9684454D35D2CEB02D80 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0CA4A13E65C117F691BE12E5 /* PrivacyInfo.xcprivacy */; };
+		939602ACB355B3200BD7BC2F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A436FF1FA2DA5FD9A4D6D3A8 /* Assets.xcassets */; };
 		9A8002B6533274344C77C6F8 /* UploadableShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DB243FDEDFA01B0F9657F76B /* UploadableShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		9A990162EA27E46B61564AD4 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5424D332E1AD5B361BAB917D /* ShareViewController.swift */; };
 		9B5AF9663DB2039C1BEDE587 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0CA4A13E65C117F691BE12E5 /* PrivacyInfo.xcprivacy */; };
@@ -61,7 +63,9 @@
 		5AB61347401DE5AB1C449844 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		5C4586C88BDAC98809962B2F /* FailureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailureView.swift; sourceTree = "<group>"; };
 		7C598C87DED9A745E8EBD8C0 /* DoneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoneView.swift; sourceTree = "<group>"; };
+		7DFB9E0D453A02F98CE889D0 /* ScreenshotHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotHarness.swift; sourceTree = "<group>"; };
 		920AC27B94A5F5C6787B8F82 /* ShareModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareModel.swift; sourceTree = "<group>"; };
+		A436FF1FA2DA5FD9A4D6D3A8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B94588551D391FEF63A7DD03 /* WorkingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkingView.swift; sourceTree = "<group>"; };
 		DB243FDEDFA01B0F9657F76B /* UploadableShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = UploadableShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -143,6 +147,7 @@
 		D3EB3F7914B6FB3F706AD83A = {
 			isa = PBXGroup;
 			children = (
+				A436FF1FA2DA5FD9A4D6D3A8 /* Assets.xcassets */,
 				DF9DA16220A07E4DF1667EEB /* App */,
 				7ED92357E9693882D4498E9D /* Packages */,
 				76981806EB5DD3C6846F0317 /* ShareExtension */,
@@ -154,6 +159,7 @@
 		DF9DA16220A07E4DF1667EEB /* App */ = {
 			isa = PBXGroup;
 			children = (
+				7DFB9E0D453A02F98CE889D0 /* ScreenshotHarness.swift */,
 				2C1029DBB33BC306A0C1AAAF /* UploadableApp.swift */,
 				ADDCBC85915DCC55B8B2F30F /* Components */,
 				C8F138306FCC40B75B9C6DDD /* Screens */,
@@ -271,6 +277,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				939602ACB355B3200BD7BC2F /* Assets.xcassets in Resources */,
 				9B5AF9663DB2039C1BEDE587 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -285,6 +292,7 @@
 				FDFE24C51F6390B1587E3333 /* DoneView.swift in Sources */,
 				4A2DD3879F926F53179C3B95 /* FailureView.swift in Sources */,
 				7ECBD600D9D02B749B3FDB49 /* HomeView.swift in Sources */,
+				111F7C6CB357FD66C780A3CB /* ScreenshotHarness.swift in Sources */,
 				2A9F8A24400DCA7D14BDA57E /* SpecView.swift in Sources */,
 				BACEC8E964059D8EC1AE9E68 /* UploadableApp.swift in Sources */,
 				5F250679A157A0E3D00686FE /* UploadableStore.swift in Sources */,

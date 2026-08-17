@@ -132,17 +132,36 @@ so the "fast path" saves nothing.
 - **Contact info is required and "Sign-in required" must be unchecked.**
 - **Screenshots: largest size per family only** — 1320 × 2868 for iPhone,
   2064 × 2752 for iPad. Apple scales the rest itself.
+- **A 6.5" drop zone does not mean 6.5" is required.** 1320 × 2868 is the
+  required **6.9"** size; 6.5" (1284 × 2778 / 1242 × 2688) is required *only*
+  when no 6.9" screenshots are provided, so the 6.5" zone is the fallback slot
+  showing itself because the 6.9" slot is still empty. Pick the display size in
+  the version page's selector rather than resizing anything.
 - **Publish the privacy answers.** Saving them is not enough and it blocks
   submission.
 
 ## The in-app purchase
 
-**It does not exist in App Store Connect yet.** Verified by API, not assumed:
-`GET /v1/apps/6802146013/inAppPurchasesV2` returns **0 items**. Until it is
-created, a shipped build's paywall button reads "Get Uploadable Pro" with no
-price, and tapping it shows *"The store isn't available right now."* — because
+**Created — product `6802328412`, state `MISSING_METADATA`.** Localization and
+price schedule (USD, manual) are both in place; the one thing outstanding is the
+**review screenshot**, which is why the state has not advanced to *Ready to
+Submit*. The product cannot be attached to the version until it does.
+
+Until an IAP exists at all, a shipped build's paywall reads "Get Uploadable Pro"
+with no price and tapping it shows *"The store isn't available right now."* —
 `Product.products(for:)` returns nothing. A reviewer who reaches the paywall
-cannot buy, which is a Guideline 2.1 rejection rather than a cosmetic gap.
+cannot buy, which is a Guideline 2.1 rejection rather than a cosmetic gap. Check
+state by API rather than by eye:
+
+```
+GET /v2/inAppPurchases/<id>?include=inAppPurchaseLocalizations,iapPriceSchedule,appStoreReviewScreenshot
+```
+
+`appStoreReviewScreenshot` with `data: null` is the whole diagnosis. Note that
+`GET /v2/inAppPurchases/<id>/iapPriceSchedule` returns 404 even when a schedule
+exists — read the relationship off the product instead, or fetch
+`/v1/inAppPurchasePriceSchedules/<id>`. A 404 on that path is not evidence of a
+missing price.
 
 | | |
 |---|---|
@@ -176,6 +195,24 @@ Then **attach it to version 1.0** in the version page's *In-App Purchases and
 Subscriptions* section. A first-version IAP is reviewed alongside the app; if it
 is not attached it is simply not reviewed, and the app ships with a dead paywall
 regardless of how complete the product looks.
+
+### Screenshot display types, if this is ever automated
+
+There is **no `APP_IPHONE_69`** in the API. Straight from the live API's own
+validation error — better evidence than the docs — the accepted iPhone values are
+`APP_IPHONE_35`, `_40`, `_47`, `_55`, `_58`, `_61`, `_65`, `_67`, and for iPad
+`APP_IPAD_97`, `_105`, `APP_IPAD_PRO_129`, `APP_IPAD_PRO_3GEN_11`,
+`APP_IPAD_PRO_3GEN_129`. So 6.9" files go into the **`APP_IPHONE_67`** set and
+13" iPad files into `APP_IPAD_PRO_3GEN_129`. The display-type name lags the
+hardware; the pixel dimensions are what Apple validates.
+
+To ask the API what it accepts rather than guessing, POST a deliberately invalid
+value and read the error — it enumerates every valid one:
+
+```
+POST /v1/appScreenshotSets   {"data":{"type":"appScreenshotSets",
+  "attributes":{"screenshotDisplayType":"NONSENSE"}, ...}}
+```
 
 ### The review screenshot shows no price, and cannot
 

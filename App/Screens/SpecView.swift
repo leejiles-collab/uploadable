@@ -146,6 +146,26 @@ struct SpecView: View {
             Text("Drag to move, pinch to resize. \(spec.aspect.label) for \(spec.name).")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+
+            // Said to everyone, always, rather than triggered by geometry.
+            // Nothing measurable separates a photograph taken too close from a
+            // well-framed one — the crop rectangle starts at its maximum size
+            // for every portrait, so any warning built on that would fire for
+            // everybody. What we can honestly do is state what the form checks
+            // and let the person look at their own photo, which they can do and
+            // we cannot. It says nothing about how anyone looks.
+            Text("Forms want your whole head inside the frame, with a little "
+                 + "space above and below the chin. If it won't fit at any "
+                 + "size, you'll need a photo taken from further back.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if spec.source.isLinkable {
+                Link(destination: spec.source.url) {
+                    Label("\(spec.issuer)'s photo requirements", systemImage: "arrow.up.right.square")
+                        .font(.footnote)
+                }
+            }
         }
     }
 

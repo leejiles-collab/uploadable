@@ -105,6 +105,16 @@ struct ShareFlowView: View {
                         crop: $model.crop
                     )
                     .frame(maxHeight: 260)
+                    // Same criterion as the app. No link here on purpose:
+                    // opening Safari from a share sheet throws the person out
+                    // of whatever they were doing to get here.
+                    Text("Forms want your whole head inside the frame, with a "
+                         + "little space above and below the chin. If it won't "
+                         + "fit at any size, you'll need a photo taken from "
+                         + "further back.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
                     Text("Drag to move, pinch to resize.")
                         .font(.caption).foregroundStyle(.secondary)
                 }

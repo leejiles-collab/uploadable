@@ -328,4 +328,29 @@ struct RegressionTests {
 
         await engine.discardOutputs()
     }
+
+    // MARK: - The spec link on the crop screen
+
+    /// Every offered preset can be linked, so the crop screen's link is never
+    /// missing where someone would expect it.
+    @Test func everyOfferedSpecHasALinkableSource() {
+        for spec in SpecCatalog.all {
+            #expect(spec.source.isLinkable, "\(spec.name) would show no link")
+            #expect(spec.source.url.scheme == "https", "\(spec.name) is not https")
+        }
+    }
+
+    /// And nothing else can. Custom carries a placeholder URL and a dead source
+    /// is kept on purpose — putting either in front of someone as a tappable
+    /// "official requirements" link would be worse than showing no link at all.
+    @Test func placeholderAndDeadSourcesAreNeverLinkable() {
+        let custom = SpecCatalog.custom(
+            width: 600...600, height: 600...600, bytes: 0...240_000, aspect: .square
+        )
+        #expect(custom.source.isLinkable == false)
+
+        for draft in SpecCatalog.drafts where !draft.source.isVerified || draft.source.urlIsDead {
+            #expect(draft.source.isLinkable == false, "\(draft.name) would be linked")
+        }
+    }
 }

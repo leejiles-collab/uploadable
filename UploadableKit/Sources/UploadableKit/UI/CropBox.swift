@@ -50,14 +50,32 @@ public struct CropBox: View {
                         .frame(width: viewRect(in: frame).width, height: viewRect(in: frame).height)
                         .offset(x: viewRect(in: frame).minX, y: viewRect(in: frame).minY)
                         .gesture(dragGesture(in: frame))
-                        .gesture(pinchGesture())
                         .accessibilityLabel("Crop area")
                         .accessibilityHint("Drag to move, pinch to resize")
-                        // The crop's own size, so VoiceOver can report it and a
-                        // UI test can tell whether a gesture actually moved it.
-                        .accessibilityValue(String(format: "%.4f", crop.width))
+                        // Size and position both, because placing a crop
+                        // without sight needs to know where it sits as much as
+                        // how big it is. Also the only observable a UI test
+                        // has: the accessibility *frame* reports the whole
+                        // photo, not the rectangle.
+                        .accessibilityValue(
+                            "\(Int((crop.width * 100).rounded()))% of the photo's width, "
+                            + "\(Int((crop.y * 100).rounded()))% from the top"
+                        )
                 }
             }
+            // Pinch is attached out here, to the whole photo, rather than to the
+            // rectangle itself. Two fingers spreading leave a small rect almost
+            // immediately, so a pinch that only counts inside it reads as broken
+            // — which is exactly how it read to the first person who used it.
+            //
+            // `simultaneousGesture` so it does not take the one-finger drag away
+            // from the rectangle. A magnify needs two touches and a drag needs
+            // one, so the two never contend for the same interaction.
+            .contentShape(Rectangle())
+            .simultaneousGesture(
+                pinchGesture(),
+                including: aspect.value == nil ? .subviews : .all
+            )
         }
         .aspectRatio(
             CGFloat(imageSize.width) / CGFloat(max(imageSize.height, 1)),
@@ -115,8 +133,12 @@ public struct CropBox: View {
                 // Grow about the centre, so pinching does not also shift the frame.
                 let centreX = start.x + start.width / 2
                 let centreY = start.y + start.height / 2
-                var width = start.width / scale
-                var height = start.height / scale
+                // Fingers apart makes the box bigger. The photo is fixed and the
+                // rectangle is the thing being handled, so it follows the
+                // fingers; treating this as zooming *into* the photo would make
+                // it move the opposite way to every other draggable box.
+                var width = start.width * scale
+                var height = start.height * scale
                 width = min(width, 1)
                 height = min(height, 1)
                 crop = clamped(CropRect(

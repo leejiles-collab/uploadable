@@ -246,6 +246,13 @@ public struct SpecSource: Sendable, Hashable {
 
     public var isVerified: Bool { verifiedOn != nil }
 
+    /// Whether this URL can be put in front of someone.
+    ///
+    /// Custom carries a placeholder URL and no verification, and a dead source
+    /// is kept deliberately so the catalog does not pretend the numbers have a
+    /// live origin. Neither should ever become a tappable link.
+    public var isLinkable: Bool { isVerified && !urlIsDead }
+
     /// Days since anyone confirmed these numbers, or nil if never.
     public func age(asOf now: Date = Date()) -> Int? {
         guard let verifiedOn else { return nil }

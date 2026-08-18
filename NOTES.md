@@ -201,3 +201,33 @@ The test was written against the unfixed code first and reproduced the trap
 exactly, with the simulator's crash log naming
 `closure #1 in closure #1 in DoneView.saveToPhotos()`. A regression test that has
 never been seen to fail is a guess.
+
+---
+
+## Build 2 saved photos upside down
+
+Four of the eight hand-written EXIF orientation transforms were wrong — 5, 6, 7
+and 8, every case that swaps the axes. Orientation 6 is what an iPhone portrait
+photo carries, so most real inputs came out 180° out. Case 7 was malformed
+rather than merely rotated.
+
+`ImageNormaliser` now decodes with `kCGImageSourceCreateThumbnailWithTransform`
+and ImageIO applies the orientation. The transform table is deleted. That call
+was already in this file — `preview()` had always used it, which is exactly why
+previews looked right while the saved file did not.
+
+**Where the bug was not:** `PhotosLibrary` passes a file URL and never builds a
+`UIImage`, and the crash fix moved the Photos call without changing a byte of it.
+The file on disk was wrong, so Files and Photos were both wrong; Photos was
+displaying it faithfully.
+
+**Why nothing caught it.** Dimensions right, EXIF tag correctly stripped, bytes
+in band, `OutputVerifier` fully green. No verifier can know which way up a
+photograph belongs. `OrientationTests` now asserts the pixels: a marker in the
+stored top-left, and a table of which corner it must land in for each flag. The
+expectations are read off the EXIF spec rather than recomputed, so the test
+cannot repeat the implementation's mistake.
+
+The test was checked against the exact code that shipped in build 2 and reports
+*"orientation 6 reached the file upside down"*. A regression test nobody has seen
+fail is a guess.

@@ -51,13 +51,27 @@ public enum ImageNormaliser {
     /// at the portal on its side.
     public static func normalise(url: URL, facts: SourceFacts) throws -> CGImage {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-              let decoded = CGImageSourceCreateImageAtIndex(source, 0, [
+              let decoded = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                  // ImageIO applies the EXIF orientation itself. This used to be
+                  // a hand-written table of eight CGAffineTransforms, and four of
+                  // the eight were wrong — every orientation that swaps the axes.
+                  // A portrait iPhone photo (orientation 6) came out upside down,
+                  // shipped, and was found by a person looking at their own face.
+                  //
+                  // `FromImageAlways` with the full pixel size as the maximum is
+                  // a full-resolution decode, not a thumbnail; the option name is
+                  // the only thing small about it. It is the same path `preview`
+                  // has always used, which is why previews were never wrong while
+                  // the output was.
+                  kCGImageSourceCreateThumbnailFromImageAlways: true,
+                  kCGImageSourceCreateThumbnailWithTransform: true,
+                  kCGImageSourceThumbnailMaxPixelSize: max(facts.pixelWidth, facts.pixelHeight),
                   kCGImageSourceShouldCache: false
               ] as CFDictionary)
         else {
             throw FitFailure.unreadableSource("The image data could not be decoded.")
         }
-        return try uprightSRGB(decoded, orientation: facts.orientation)
+        return try sRGBCopy(decoded)
     }
 
     /// A small upright copy, for showing the photo before anything is decided.
@@ -76,25 +90,17 @@ public enum ImageNormaliser {
         ] as CFDictionary)
     }
 
-    /// Draws into an sRGB context, applying the EXIF orientation as it goes.
-    static func uprightSRGB(_ image: CGImage, orientation: Int) throws -> CGImage {
-        let swapsAxes = (5...8).contains(orientation)
-        let width = swapsAxes ? image.height : image.width
-        let height = swapsAxes ? image.width : image.height
-
-        guard let context = sRGBContext(width: width, height: height) else {
+    /// Redraws into an sRGB context, which is what actually converts the colour.
+    ///
+    /// No orientation work here any more — the image arrives upright from
+    /// ImageIO. Drawing P3 pixels into an sRGB context is the conversion;
+    /// handing `CGImageDestination` a P3 image and asking for sRGB does nothing.
+    static func sRGBCopy(_ image: CGImage) throws -> CGImage {
+        guard let context = sRGBContext(width: image.width, height: image.height) else {
             throw FitFailure.unreadableSource("Could not allocate a drawing context.")
         }
         context.interpolationQuality = .high
-        context.concatenate(transform(for: orientation, width: width, height: height))
-        // After the transform the drawing space is the image's own orientation,
-        // so draw at the untransformed size.
-        context.draw(image, in: CGRect(
-            x: 0, y: 0,
-            width: swapsAxes ? height : width,
-            height: swapsAxes ? width : height
-        ))
-
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
         guard let out = context.makeImage() else {
             throw FitFailure.unreadableSource("Could not render the image.")
         }
@@ -174,20 +180,6 @@ public enum ImageNormaliser {
         )
     }
 
-    /// CGContext is y-up; these are the standard EXIF orientation transforms.
-    private static func transform(for orientation: Int, width: Int, height: Int) -> CGAffineTransform {
-        let w = CGFloat(width), h = CGFloat(height)
-        return switch orientation {
-        case 2: CGAffineTransform(translationX: w, y: 0).scaledBy(x: -1, y: 1)
-        case 3: CGAffineTransform(translationX: w, y: h).scaledBy(x: -1, y: -1)
-        case 4: CGAffineTransform(translationX: 0, y: h).scaledBy(x: 1, y: -1)
-        case 5: CGAffineTransform(rotationAngle: .pi / 2).scaledBy(x: 1, y: -1)
-        case 6: CGAffineTransform(translationX: w, y: 0).rotated(by: .pi / 2)
-        case 7: CGAffineTransform(translationX: w, y: h).rotated(by: .pi / 2).scaledBy(x: 1, y: -1)
-        case 8: CGAffineTransform(translationX: 0, y: h).rotated(by: -.pi / 2)
-        default: .identity
-        }
-    }
 }
 
 /// An exact output size.

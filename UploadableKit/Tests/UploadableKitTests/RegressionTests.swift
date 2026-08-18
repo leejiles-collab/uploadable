@@ -353,4 +353,18 @@ struct RegressionTests {
             #expect(draft.source.isLinkable == false, "\(draft.name) would be linked")
         }
     }
+
+    // MARK: - The test-build gate
+
+    /// The gate must fail closed. Everything behind it is reachable by anyone
+    /// holding a build this returns true for, so a wrong answer in the
+    /// production direction is the one that costs money.
+    @Test func onlyASandboxReceiptCountsAsATestBuild() {
+        #expect(BuildEnvironment.isTestBuild(receiptName: "sandboxReceipt"))
+        #expect(BuildEnvironment.isTestBuild(receiptName: "receipt") == false)
+        #expect(BuildEnvironment.isTestBuild(receiptName: nil) == false)
+        #expect(BuildEnvironment.isTestBuild(receiptName: "") == false)
+        #expect(BuildEnvironment.isTestBuild(receiptName: "SandboxReceipt") == false)
+        #expect(BuildEnvironment.isTestBuild(receiptName: "sandboxReceipt.bak") == false)
+    }
 }

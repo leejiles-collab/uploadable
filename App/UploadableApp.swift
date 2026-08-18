@@ -49,8 +49,13 @@ struct RootView: View {
         case .home:
             HomeView(
                 onPicked: { data, name in store.open(data: data, suggestedName: name) },
-                onFailed: { store.failedToPick() }
+                onFailed: { store.failedToPick() },
+                onResetExports: { Task { await store.resetExportsForTesting() } },
+                exportsRemaining: store.exportsRemaining
             )
+            // The meter is read on the way in, so returning Home after spending
+            // an export shows the truth rather than a stale number.
+            .task { await store.refreshEntitlements() }
 
         case .choosing(let photo):
             SpecView(

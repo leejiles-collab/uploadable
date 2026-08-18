@@ -460,6 +460,71 @@ reconcile.
 
 ---
 
+## Resetting the export count on a real device
+
+The free-export count survives reinstall on purpose — App Group defaults plus a
+Keychain mirror — so a tester cannot clear it by deleting the app. In a test
+build, **hold the "Uploadable" wordmark on the Home screen for two seconds** and
+confirm. The line under the title shows the meter, so you can see it move.
+
+### Why this is not `#if DEBUG`
+
+It cannot be. Archive builds Release, so `#if DEBUG` code is not in a TestFlight
+build at all — verified by launching a Release build with `--screen=done` and
+watching it sit on Home.
+
+The deeper reason is that **the TestFlight build and the App Store build are the
+same binary**. One archive is uploaded; TestFlight serves it to testers and the
+identical bits are released. Any compile-time flag that is on for a tester is on
+for a customer. A separate "beta" configuration would only work by shipping
+something nobody tested, which is a worse problem than the one it solves.
+
+### What it is gated on instead
+
+`BuildEnvironment.isTestBuild` — `#if DEBUG`, or at runtime a **sandbox
+receipt**:
+
+```swift
+Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+```
+
+Apple issues a sandbox receipt to TestFlight installs and a production receipt to
+App Store purchases. The check is local, with no network call — which matters for
+an app whose privacy page says it makes none. `AppTransaction.shared` is the more
+modern answer and was rejected for exactly that reason: it can reach Apple, and
+that would make the privacy page's flat claim need a footnote.
+
+The decision function is separated from `Bundle.main` and unit-tested. It fails
+closed: `receipt`, an empty string, a near-miss like `SandboxReceipt`, and a
+missing receipt all read as production.
+
+### Why it is safe, stated honestly
+
+**The code does ship.** A runtime gate is the only kind that can work here, so
+the affordance is in the App Store binary and is simply unreachable. What makes
+that acceptable:
+
+- **It is gated twice**: a sandbox receipt, and a deliberate two-second press on
+  a static title that nothing invites you to touch.
+- **The worst case is bounded.** If the gate were somehow wrong, a person could
+  refill their own free-export allowance. That is revenue, not data loss, not
+  a privacy breach, and not anything that damages a file.
+- **It is visible, not hidden.** The label announces itself in a test build. A
+  secret control is one the tester cannot find and nobody remembers to check for
+  before release.
+
+**App Review runs against a sandbox receipt, so a reviewer's build will show it.**
+That is deliberate rather than a leak — a reviewer testing the purchase flow is
+in the same position as any other tester — but it means the honest claim is
+"unreachable by App Store customers", not "unreachable in production". If that
+trade is ever unwanted, delete `ResetOnLongPress` and the label; nothing else
+depends on them.
+
+`--for-screenshots` suppresses the furniture, because the store screenshots are
+necessarily built Debug and would otherwise show it.
+
+---
+
 ## Screenshot pipeline
 
 ```

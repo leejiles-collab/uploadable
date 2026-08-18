@@ -71,6 +71,17 @@ final class UploadableStore {
         FilesLibrary.adoptStaged()
     }
 
+    /// Puts the free-export meter back, for testing on a real device.
+    ///
+    /// Reachable only where `BuildEnvironment.isTestBuild` is true, which is
+    /// Xcode, the simulator, TestFlight and App Review — never an App Store
+    /// purchase. The method itself is unconditional so that the gate lives in
+    /// exactly one place and is testable; the caller is what is gated.
+    func resetExportsForTesting() async {
+        await exports.reset()
+        await refreshEntitlements()
+    }
+
     func refreshEntitlements() async {
         await purchases.start()
         exportsRemaining = await exports.remaining

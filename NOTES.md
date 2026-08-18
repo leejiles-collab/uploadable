@@ -231,3 +231,36 @@ cannot repeat the implementation's mistake.
 The test was checked against the exact code that shipped in build 2 and reports
 *"orientation 6 reached the file upside down"*. A regression test nobody has seen
 fail is a guess.
+
+---
+
+## The test-build reset, and why it is not `#if DEBUG`
+
+The export count survives reinstall by design, so a tester on a real device
+cannot clear it. In a test build, holding the Home wordmark for two seconds
+offers a reset, and the line under the title shows the meter so you can watch it
+move.
+
+**`#if DEBUG` cannot deliver this.** Archive builds Release, and the TestFlight
+binary is the App Store binary — one upload, served to testers and released
+unchanged. A compile-time flag that is on for a tester is on for a customer, and
+a separate beta configuration only "works" by shipping something nobody tested.
+
+The gate is `BuildEnvironment.isTestBuild`: `#if DEBUG`, or a **sandbox receipt**
+at runtime. Local, no network — `AppTransaction.shared` is the modern answer and
+was rejected because it can reach Apple, which would put a footnote on the
+privacy page's flat claim that the app makes no network requests.
+
+The code ships and is unreachable rather than absent. That is acceptable because
+the worst case is bounded: a wrong gate refills a free-usage meter. Revenue, not
+data loss. It is also announced on screen rather than hidden, because a secret
+control is one the tester cannot find and nobody remembers to remove.
+
+**App Review runs on a sandbox receipt**, so a reviewer's build shows it. The
+honest claim is "unreachable by App Store customers", not "unreachable in
+production". Deleting `ResetOnLongPress` and its label removes it entirely if
+that trade is ever unwanted; nothing else depends on them.
+
+`--for-screenshots` suppresses the furniture, since the store screenshots are
+necessarily built Debug and would otherwise show it. The store's home screenshot
+was re-checked after this change.

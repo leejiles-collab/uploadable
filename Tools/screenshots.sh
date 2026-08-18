@@ -82,7 +82,8 @@ for DEVICE in "$IPHONE:iphone" "$IPAD:ipad" "$IPHONE67:iphone67"; do
 
   for SCREEN in $SCREENS; do
     xcrun simctl terminate "$ID" com.leejiles.uploadable 2>/dev/null || true
-    xcrun simctl launch "$ID" com.leejiles.uploadable "--screen=$SCREEN" >/dev/null
+    # --for-screenshots keeps the test-build reset furniture out of the shot.
+    xcrun simctl launch "$ID" com.leejiles.uploadable "--screen=$SCREEN" --for-screenshots >/dev/null
     case "$SCREEN" in done|nz|paywall) sleep 16 ;; *) sleep 7 ;; esac
     xcrun simctl io "$ID" screenshot "$RAW/$TAG-$SCREEN.png" >/dev/null 2>&1
   done

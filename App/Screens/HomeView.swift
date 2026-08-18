@@ -7,9 +7,14 @@ import UploadableKit
 struct HomeView: View {
     let onPicked: (Data, String) -> Void
     let onFailed: () -> Void
+    /// Only ever called from a test build. See `ResetOnLongPress` below.
+    let onResetExports: () -> Void
+    /// Shown only in a test build, so a tester can see the meter move.
+    let exportsRemaining: Int
 
     @State private var selection: PhotosPickerItem?
     @State private var isLoading = false
+    @State private var askingToReset = false
 
     var body: some View {
         // Read here and capture by value. `body` is main-actor isolated but
@@ -28,8 +33,35 @@ struct HomeView: View {
                 Text("Make your photo fit.")
                     .font(.title3)
                     .foregroundStyle(.secondary)
+                if BuildEnvironment.isTestBuild, !BuildEnvironment.isCapturingScreenshots {
+                    // Says so out loud. A hidden control a tester cannot see is
+                    // one they will not find when they need it, and one nobody
+                    // remembers to check for before release.
+                    Text("Test build · \(exportsRemaining) free "
+                         + "export\(exportsRemaining == 1 ? "" : "s") left · "
+                         + "hold the title to reset")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
+                }
             }
             .accessibilityElement(children: .combine)
+            .modifier(ResetOnLongPress(
+                isEnabled: BuildEnvironment.isTestBuild && !BuildEnvironment.isCapturingScreenshots
+            ) {
+                askingToReset = true
+            })
+            .confirmationDialog(
+                "Reset the free export count?",
+                isPresented: $askingToReset,
+                titleVisibility: .visible
+            ) {
+                Button("Reset", role: .destructive, action: onResetExports)
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Puts the meter back to \(Config.freeExports) free exports. "
+                     + "Test builds only.")
+            }
 
             Spacer()
 
@@ -78,6 +110,28 @@ struct HomeView: View {
                     .map { "Photo.\($0)" } ?? "Photo.jpg"
                 onPicked(data, name)
             }
+        }
+    }
+}
+
+/// Attaches the reset gesture only when this is a test build.
+///
+/// A `ViewModifier` rather than a conditional `.onLongPressGesture`, because
+/// applying a gesture conditionally inside a view builder changes the view's
+/// identity between branches and SwiftUI rebuilds the subtree. Here the branch
+/// is on whether the gesture exists at all, and in a production build the
+/// closure is never installed.
+private struct ResetOnLongPress: ViewModifier {
+    let isEnabled: Bool
+    let action: () -> Void
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            // Two seconds. Long enough that nobody arrives here by accident
+            // while waiting for the picker.
+            content.onLongPressGesture(minimumDuration: 2.0, perform: action)
+        } else {
+            content
         }
     }
 }

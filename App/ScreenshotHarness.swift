@@ -19,7 +19,19 @@ enum ScreenshotHarness {
 
     @MainActor
     static func run(store: UploadableStore) async -> Bool {
-        guard let argument = ProcessInfo.processInfo.arguments
+        let arguments = ProcessInfo.processInfo.arguments
+
+        // The export count survives reinstall on purpose — App Group defaults
+        // plus a Keychain mirror — so a UI test cannot get a clean meter by
+        // uninstalling. Without this the first export tap lands on the paywall
+        // instead of the thing under test, which is exactly how the Save to
+        // Photos test first "failed".
+        if arguments.contains("--reset-exports") {
+            await store.exports.reset()
+            await store.refreshEntitlements()
+        }
+
+        guard let argument = arguments
             .first(where: { $0.hasPrefix("--screen=") })
         else { return false }
 

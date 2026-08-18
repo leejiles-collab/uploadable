@@ -1,5 +1,4 @@
 import SwiftUI
-import Photos
 import UploadableKit
 
 /// The spec being met, one line per requirement.
@@ -191,21 +190,23 @@ struct DoneView: View {
         }
     }
 
+    /// The Photos work itself lives in `PhotosLibrary`, outside any actor.
+    ///
+    /// It must not be written inline here: a closure inside this `@MainActor`
+    /// view would inherit main-actor isolation, and `performChanges` runs its
+    /// block on `com.apple.PHPhotoLibrary.changes`. Swift 6 checks that
+    /// inherited claim at runtime and traps the process when it does not hold.
+    /// That shipped, in build 1, and only a real person tapping this button on
+    /// a real phone found it.
     private func saveToPhotos() {
         let url = fit.url
         Task {
-            let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
-            guard status == .authorized || status == .limited else {
-                saveMessage = "Uploadable needs permission to add photos. You can grant it in Settings."
-                return
-            }
             do {
-                try await PHPhotoLibrary.shared().performChanges {
-                    PHAssetCreationRequest.forAsset()
-                        .addResource(with: .photo, fileURL: url, options: nil)
-                }
+                try await PhotosLibrary.add(url)
                 saveMessage = "Saved to Photos."
                 onExported()
+            } catch let failure as PhotosLibrary.Failure {
+                saveMessage = failure.localizedDescription
             } catch {
                 saveMessage = "Couldn't save to Photos. \(error.localizedDescription)"
             }

@@ -165,3 +165,39 @@ The Release build was installed and launched with `--screen=done`, the exact
 argument the Debug build obeys, and stayed on Home. That is the check — grepping
 an optimised Swift binary for string literals proves nothing, which is already a
 recorded trap.
+
+---
+
+## Build 1 crashed on Save to Photos
+
+`PHPhotoLibrary.performChanges` takes a block that is **not** `@Sendable` in the
+SDK, so the closure written inside `DoneView` — a `@MainActor` context — quietly
+inherited main-actor isolation. Photos then ran it on
+`com.apple.PHPhotoLibrary.changes`, Swift 6 checked the inherited claim, and the
+process trapped.
+
+The work now lives in `PhotosLibrary`, a `nonisolated` enum in UploadableKit.
+That removes the inference at source, which is the only fix that stays fixed —
+`@Sendable` at the call site would work until someone moved the code back.
+
+**Audit result: this was the only instance.** There is no `assumeIsolated`
+anywhere in the codebase, and grepping for one would have found nothing. Every
+other framework closure was checked by compiler probe (see `SCALLAPP.md`);
+`NSItemProvider.loadFileRepresentation` in the share extension is annotated
+`@Sendable` in the SDK and does not inherit, so the extension's import path was
+never at risk.
+
+**`Tools/uitests.sh` exists because of this.** It grants `photos-add` up front
+and stages the fixtures, then runs the UI tests. Two things had to be true before
+the new test could fail for the right reason:
+
+- Permission must be pre-granted, or the alert stalls the tap and a real crash
+  looks like a timeout.
+- The export meter must be reset (`--reset-exports`, DEBUG only), or the paywall
+  intercepts the tap and the Photos code never runs. The first version of this
+  test "failed" that way and proved nothing.
+
+The test was written against the unfixed code first and reproduced the trap
+exactly, with the simulator's crash log naming
+`closure #1 in closure #1 in DoneView.saveToPhotos()`. A regression test that has
+never been seen to fail is a guess.
